@@ -148,6 +148,25 @@
             min-width: 20px;
             width: 20px;
             text-align: center;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+        }
+
+        .board-table th.jg-header:hover {
+            background: #34495e;
+        }
+
+        .board-table th.jg-header .toggle {
+            display: inline-block;
+            width: 18px;
+            margin-right: 4px;
+            transition: transform 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .board-table th.jg-header.all-collapsed .toggle {
+            transform: rotate(-90deg);
         }
 
         .swimlane-label {
@@ -359,6 +378,64 @@
         .btn-secondary:hover {
             background: #d0d0d0;
         }
+
+        /* Sort Toggle Switch */
+        .sort-toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.3s;
+            border-radius: 20px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: #3498db;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+        }
+
+        .sort-toggle-label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            white-space: nowrap;
+        }
 </style>
 </head>
 <body>
@@ -381,6 +458,13 @@
                 <option value="{{ jg }}">{{ jg }}</option>
                 {% endfor %}
             </select>
+        </div>
+        <div class="sort-toggle-container">
+            <label class="sort-toggle-label" for="sort-by-count">Sort by Count:</label>
+            <label class="toggle-switch">
+                <input type="checkbox" id="sort-by-count">
+                <span class="toggle-slider"></span>
+            </label>
         </div>
         <div class="file-bar">
             <span class="filename" id="current-file" title="{{ filename }}">{{ filename }}</span>
@@ -425,6 +509,7 @@
         const legendEl = document.getElementById("legend");
         const roleFilterEl = document.getElementById("role-filter");
         const jgFilterEl = document.getElementById("jg-filter");
+        const sortByCountToggle = document.getElementById("sort-by-count");
         const editModal = document.getElementById("edit-modal");
         const editForm = document.getElementById("edit-form");
         const editNameInput = document.getElementById("edit-name");
@@ -443,6 +528,42 @@
         let columnOrder = []; // Track custom column order
         let cachedData = null; // Cache API response for reordering
         let currentEditingPerson = null; // Track which person is being edited
+        let sortByCellCount = false; // Track sort toggle state
+        let originalRoles = []; // Store original role order for toggling back
+
+        function getTotalCountByRole() {
+            const counts = {};
+            if (!cachedData || !cachedData.roles) return counts;
+
+            // Initialize all roles with 0
+            cachedData.roles.forEach(role => {
+                counts[role] = 0;
+            });
+
+            // Count people in each role
+            Object.values(cachedData.swimlanes).forEach(jgData => {
+                Object.entries(jgData).forEach(([role, people]) => {
+                    counts[role] = (counts[role] || 0) + people.length;
+                });
+            });
+
+            return counts;
+        }
+
+        function sortColumnsByCount() {
+            if (!cachedData || !cachedData.roles) return;
+
+            const counts = getTotalCountByRole();
+
+            // Sort roles by count (descending), keeping the sort stable
+            const sorted = [...columnOrder].sort((a, b) => {
+                const countA = counts[a] || 0;
+                const countB = counts[b] || 0;
+                return countB - countA; // Descending order
+            });
+
+            columnOrder = sorted;
+        }
 
         function buildColorMap(roles) {
             roleColorMap = {};
@@ -487,6 +608,12 @@
             // Reset column order when data changes
             if (cachedData.roles) {
                 columnOrder = [...cachedData.roles];
+                originalRoles = [...cachedData.roles];
+
+                // Reapply sort if toggle is enabled
+                if (sortByCellCount) {
+                    sortColumnsByCount();
+                }
             }
 
             renderBoard();
@@ -515,14 +642,36 @@
 
             const jgHeader = document.createElement("th");
             jgHeader.className = "jg-header";
-            jgHeader.textContent = "JG";
+            jgHeader.innerHTML = '<span class="toggle">▼</span>JG';
             jgHeader.draggable = false;
+            jgHeader.addEventListener("click", () => {
+                // Toggle all JG rows
+                const allJgRows = document.querySelectorAll("tr[data-jg]");
+                const allCollapsed = jgHeader.classList.contains("all-collapsed");
+
+                allJgRows.forEach(row => {
+                    if (allCollapsed) {
+                        row.classList.remove("collapsed");
+                        const swimlaneLabel = row.querySelector(".swimlane-label");
+                        if (swimlaneLabel) swimlaneLabel.classList.remove("collapsed");
+                    } else {
+                        row.classList.add("collapsed");
+                        const swimlaneLabel = row.querySelector(".swimlane-label");
+                        if (swimlaneLabel) swimlaneLabel.classList.add("collapsed");
+                    }
+                });
+
+                jgHeader.classList.toggle("all-collapsed");
+            });
             headerRow.appendChild(jgHeader);
+
+            const counts = getTotalCountByRole();
 
             for (const role of roles) {
                 const th = document.createElement("th");
                 th.style.background = roleColorMap[role];
-                th.textContent = role;
+                const count = counts[role] || 0;
+                th.textContent = `${role} (${count})`;
                 th.draggable = true;
                 th.dataset.role = role;
 
@@ -565,6 +714,7 @@
             const tbody = document.createElement("tbody");
             for (const jg of jgs) {
                 const tr = document.createElement("tr");
+                tr.dataset.jg = jg;
 
                 // JG label cell
                 const jgCell = document.createElement("td");
@@ -710,6 +860,19 @@
 
         roleFilterEl.addEventListener("change", loadBoard);
         jgFilterEl.addEventListener("change", loadBoard);
+
+        // Sort by count toggle
+        sortByCountToggle.addEventListener("change", () => {
+            sortByCellCount = sortByCountToggle.checked;
+            if (sortByCellCount) {
+                sortColumnsByCount();
+            } else {
+                // Restore original order
+                columnOrder = [...originalRoles];
+            }
+            renderBoard();
+        });
+
         loadBoard();
     </script>
 </body>

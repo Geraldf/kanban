@@ -49,7 +49,7 @@ def index():
     df = load_data()
     roles = sorted(df["Role"].unique())
     jgs = sorted(int(v) for v in df["New JG"].dropna().unique())
-    filename = os.path.basename(app.config["current_file"])
+    filename = app.config["current_file"]  # Show full path
     return render_template("index.html", roles=roles, jgs=jgs, filename=filename)
 
 
