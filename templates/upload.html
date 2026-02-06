@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanban Board - Select File</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f0f2f5;
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .upload-container {
+            background: #fff;
+            border-radius: 12px;
+            padding: 48px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 420px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            margin-bottom: 12px;
+        }
+
+        p {
+            color: #7f8c8d;
+            font-size: 0.95rem;
+            margin-bottom: 28px;
+        }
+
+        .drop-zone {
+            border: 2px dashed #bdc3c7;
+            border-radius: 8px;
+            padding: 40px 20px;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .drop-zone:hover, .drop-zone.drag-over {
+            border-color: #3498db;
+            background: #ecf5fc;
+        }
+
+        .drop-zone-text {
+            font-size: 0.95rem;
+            color: #7f8c8d;
+        }
+
+        .drop-zone-text strong {
+            color: #3498db;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .error {
+            color: #e74c3c;
+            margin-top: 16px;
+            font-size: 0.88rem;
+        }
+
+        .loading {
+            margin-top: 16px;
+            color: #3498db;
+            font-size: 0.88rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="upload-container">
+        <h1>Kanban Board</h1>
+        <p>Select an Excel file (.xlsx) to load the board</p>
+        <div class="drop-zone" id="drop-zone">
+            <div class="drop-zone-text">
+                <strong>Click to browse</strong> or drag and drop
+            </div>
+        </div>
+        <input type="file" id="file-input" accept=".xlsx">
+        <div class="error" id="error" style="display:none"></div>
+        <div class="loading" id="loading" style="display:none">Uploading...</div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById("drop-zone");
+        const fileInput = document.getElementById("file-input");
+        const errorEl = document.getElementById("error");
+        const loadingEl = document.getElementById("loading");
+
+        dropZone.addEventListener("click", () => fileInput.click());
+
+        dropZone.addEventListener("dragover", e => {
+            e.preventDefault();
+            dropZone.classList.add("drag-over");
+        });
+
+        dropZone.addEventListener("dragleave", () => {
+            dropZone.classList.remove("drag-over");
+        });
+
+        dropZone.addEventListener("drop", e => {
+            e.preventDefault();
+            dropZone.classList.remove("drag-over");
+            const file = e.dataTransfer.files[0];
+            if (file) uploadFile(file);
+        });
+
+        fileInput.addEventListener("change", () => {
+            const file = fileInput.files[0];
+            if (file) uploadFile(file);
+        });
+
+        async function uploadFile(file) {
+            if (!file.name.endsWith(".xlsx")) {
+                errorEl.textContent = "Please select an .xlsx file";
+                errorEl.style.display = "block";
+                return;
+            }
+            errorEl.style.display = "none";
+            loadingEl.style.display = "block";
+
+            const form = new FormData();
+            form.append("file", file);
+
+            try {
+                const res = await fetch("/api/upload", { method: "POST", body: form });
+                if (res.ok) {
+                    window.location.reload();
+                } else {
+                    const data = await res.json();
+                    errorEl.textContent = data.error || "Upload failed";
+                    errorEl.style.display = "block";
+                }
+            } catch (err) {
+                errorEl.textContent = "Upload failed: " + err.message;
+                errorEl.style.display = "block";
+            } finally {
+                loadingEl.style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>

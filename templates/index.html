@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanban Board - Role Review</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f0f2f5;
+            color: #333;
+        }
+
+        header {
+            background: #2c3e50;
+            color: #fff;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        header h1 {
+            font-size: 1.25rem;
+            white-space: nowrap;
+        }
+
+        .filter-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filter-bar label {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .filter-bar select {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .file-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+        }
+
+        .file-bar .filename {
+            font-size: 0.82rem;
+            opacity: 0.8;
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .file-bar button {
+            padding: 6px 14px;
+            border: 1px solid rgba(255,255,255,0.4);
+            border-radius: 4px;
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .file-bar button:hover {
+            background: rgba(255,255,255,0.25);
+        }
+
+        .legend {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            padding: 12px 24px;
+            background: #fff;
+            border-bottom: 1px solid #ddd;
+            align-items: center;
+        }
+
+        .legend-title {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.78rem;
+            color: #555;
+        }
+
+        .legend-swatch {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+        }
+
+        .board-wrapper {
+            overflow: auto;
+            padding: 20px;
+        }
+
+        .board-table {
+            border-collapse: separate;
+            border-spacing: 8px;
+            min-width: 100%;
+        }
+
+        .board-table th {
+            background: #3498db;
+            color: #fff;
+            padding: 12px 14px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            min-width: 200px;
+            text-align: left;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            cursor: grab;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .board-table th:active { cursor: grabbing; }
+
+        .board-table th.dragging { opacity: 0.4; }
+
+        .board-table th.drag-over {
+            outline: 2px dashed #fff;
+            outline-offset: -4px;
+        }
+
+        .board-table th.jg-header {
+            background: #2c3e50;
+            min-width: 80px;
+            width: 80px;
+            text-align: center;
+        }
+
+        .swimlane-label {
+            background: #34495e;
+            color: #fff;
+            padding: 12px 14px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 700;
+            text-align: center;
+            vertical-align: top;
+            cursor: pointer;
+            -webkit-user-select: none;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .swimlane-label:hover {
+            background: #3d566e;
+        }
+
+        .swimlane-label .toggle {
+            display: inline-block;
+            width: 18px;
+            margin-right: 6px;
+            transition: transform 0.2s;
+        }
+
+        .swimlane-label.collapsed .toggle {
+            transform: rotate(-90deg);
+        }
+
+        tr.collapsed td.cell {
+            display: none;
+        }
+
+        tr.collapsed td.swimlane-label {
+            border-radius: 8px;
+            padding: 8px 14px;
+        }
+
+        .cell {
+            background: #e8ecef;
+            border-radius: 8px;
+            padding: 8px;
+            vertical-align: top;
+            min-height: 100px;
+        }
+
+        .cell.drag-over {
+            background: #d0d7dd;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 6px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            font-size: 0.88rem;
+            line-height: 1.4;
+            border-left: 4px solid transparent;
+            cursor: grab;
+            transition: opacity 0.2s, box-shadow 0.2s;
+        }
+
+        .card:last-child { margin-bottom: 0; }
+
+        .card:active { cursor: grabbing; }
+
+        .card.dragging { opacity: 0.4; }
+
+        .card .name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .card .meta {
+            font-size: 0.78rem;
+            color: #7f8c8d;
+            margin-top: 4px;
+        }
+
+        .card .comment {
+            font-size: 0.78rem;
+            color: #555;
+            margin-top: 4px;
+            font-style: italic;
+        }
+
+        .empty-msg {
+            text-align: center;
+            color: #999;
+            padding: 40px 20px;
+            font-size: 0.95rem;
+        }
+
+        .cell-empty {
+            color: #bbb;
+            font-size: 0.8rem;
+            text-align: center;
+            padding: 20px 10px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Kanban Board &mdash; Role Review</h1>
+        <div class="filter-bar">
+            <label for="role-filter">Role:</label>
+            <select id="role-filter">
+                <option value="">All Roles</option>
+                {% for role in roles %}
+                <option value="{{ role }}">{{ role }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-bar">
+            <label for="jg-filter">JG:</label>
+            <select id="jg-filter">
+                <option value="">All JG</option>
+                {% for jg in jgs %}
+                <option value="{{ jg }}">{{ jg }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="file-bar">
+            <span class="filename" id="current-file" title="{{ filename }}">{{ filename }}</span>
+            <input type="file" id="file-input" accept=".xlsx" hidden>
+            <button type="button" id="load-btn">Load file...</button>
+        </div>
+    </header>
+
+    <div class="legend" id="legend"></div>
+
+    <div class="board-wrapper">
+        <table class="board-table" id="board"></table>
+    </div>
+
+    <script>
+        const boardEl = document.getElementById("board");
+        const legendEl = document.getElementById("legend");
+        const roleFilterEl = document.getElementById("role-filter");
+        const jgFilterEl = document.getElementById("jg-filter");
+
+        const PALETTE = [
+            "#2ecc71", "#3498db", "#9b59b6", "#e67e22", "#e74c3c",
+            "#1abc9c", "#f39c12", "#8e44ad", "#2980b9", "#27ae60",
+            "#d35400", "#c0392b", "#16a085", "#7f8c8d", "#2c3e50",
+            "#e84393", "#00b894", "#6c5ce7", "#fdcb6e", "#0984e3"
+        ];
+
+        let roleColorMap = {};
+        let columnOrder = []; // Track custom column order
+        let cachedData = null; // Cache API response for reordering
+
+        function buildColorMap(roles) {
+            roleColorMap = {};
+            roles.forEach((name, i) => {
+                roleColorMap[name] = PALETTE[i % PALETTE.length];
+            });
+        }
+
+        function renderLegend(roles) {
+            legendEl.innerHTML = '<span class="legend-title">Roles:</span>' +
+                roles.map(name =>
+                    `<span class="legend-item">
+                        <span class="legend-swatch" style="background:${roleColorMap[name]}"></span>
+                        ${name}
+                    </span>`
+                ).join("");
+        }
+
+        async function loadBoard() {
+            const params = new URLSearchParams();
+            if (roleFilterEl.value) params.set("role", roleFilterEl.value);
+            if (jgFilterEl.value) params.set("jg", jgFilterEl.value);
+            const qs = params.toString() ? `?${params}` : "";
+
+            const res = await fetch(`/api/board${qs}`);
+            cachedData = await res.json();
+
+            // Reset column order when data changes
+            if (cachedData.roles) {
+                columnOrder = [...cachedData.roles];
+            }
+
+            renderBoard();
+        }
+
+        function renderBoard() {
+            if (!cachedData) return;
+
+            const { jgs, swimlanes } = cachedData;
+            const roles = columnOrder;
+
+            boardEl.innerHTML = "";
+
+            if (!roles || roles.length === 0 || !jgs || jgs.length === 0) {
+                boardEl.innerHTML = '<tr><td class="empty-msg">No entries found for the selected filters.</td></tr>';
+                legendEl.innerHTML = "";
+                return;
+            }
+
+            buildColorMap(roles);
+            renderLegend(roles);
+
+            // Header row with draggable columns
+            const thead = document.createElement("thead");
+            const headerRow = document.createElement("tr");
+
+            const jgHeader = document.createElement("th");
+            jgHeader.className = "jg-header";
+            jgHeader.textContent = "JG";
+            jgHeader.draggable = false;
+            headerRow.appendChild(jgHeader);
+
+            for (const role of roles) {
+                const th = document.createElement("th");
+                th.style.background = roleColorMap[role];
+                th.textContent = role;
+                th.draggable = true;
+                th.dataset.role = role;
+
+                th.addEventListener("dragstart", e => {
+                    e.dataTransfer.setData("text/column", role);
+                    th.classList.add("dragging");
+                });
+                th.addEventListener("dragend", () => {
+                    th.classList.remove("dragging");
+                });
+                th.addEventListener("dragover", e => {
+                    e.preventDefault();
+                    th.classList.add("drag-over");
+                });
+                th.addEventListener("dragleave", () => {
+                    th.classList.remove("drag-over");
+                });
+                th.addEventListener("drop", e => {
+                    e.preventDefault();
+                    th.classList.remove("drag-over");
+                    const draggedRole = e.dataTransfer.getData("text/column");
+                    if (!draggedRole || draggedRole === role) return;
+
+                    // Reorder columns
+                    const fromIdx = columnOrder.indexOf(draggedRole);
+                    const toIdx = columnOrder.indexOf(role);
+                    if (fromIdx !== -1 && toIdx !== -1) {
+                        columnOrder.splice(fromIdx, 1);
+                        columnOrder.splice(toIdx, 0, draggedRole);
+                        renderBoard();
+                    }
+                });
+
+                headerRow.appendChild(th);
+            }
+            thead.appendChild(headerRow);
+            boardEl.appendChild(thead);
+
+            // Swimlane rows
+            const tbody = document.createElement("tbody");
+            for (const jg of jgs) {
+                const tr = document.createElement("tr");
+
+                // JG label cell
+                const jgCell = document.createElement("td");
+                jgCell.className = "swimlane-label";
+                jgCell.innerHTML = `<span class="toggle">▼</span>${jg}`;
+                jgCell.addEventListener("click", () => {
+                    tr.classList.toggle("collapsed");
+                    jgCell.classList.toggle("collapsed");
+                });
+                tr.appendChild(jgCell);
+
+                // Role cells
+                for (const role of roles) {
+                    const td = document.createElement("td");
+                    td.className = "cell";
+                    td.dataset.role = role;
+                    td.dataset.jg = jg;
+
+                    const people = swimlanes[String(jg)]?.[role] || [];
+
+                    td.addEventListener("dragover", e => {
+                        e.preventDefault();
+                        td.classList.add("drag-over");
+                    });
+                    td.addEventListener("dragleave", () => {
+                        td.classList.remove("drag-over");
+                    });
+                    td.addEventListener("drop", async e => {
+                        e.preventDefault();
+                        td.classList.remove("drag-over");
+                        const name = e.dataTransfer.getData("text/plain");
+                        const newRole = td.dataset.role;
+                        const newJg = td.dataset.jg;
+                        if (!name) return;
+
+                        const res = await fetch("/api/move", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ name, new_role: newRole, new_jg: newJg })
+                        });
+                        if (res.ok) loadBoard();
+                    });
+
+                    if (people.length === 0) {
+                        td.innerHTML = '<div class="cell-empty">-</div>';
+                    } else {
+                        for (const p of people) {
+                            const card = document.createElement("div");
+                            card.className = "card";
+                            card.style.borderLeftColor = roleColorMap[role];
+                            card.draggable = true;
+                            card.innerHTML = `
+                                <div class="name">${p.name}</div>
+                                <div class="meta">Proposed: ${p.proposed_role}</div>
+                                ${p.comment ? `<div class="comment">${p.comment}</div>` : ""}
+                            `;
+                            card.addEventListener("dragstart", e => {
+                                e.dataTransfer.setData("text/plain", p.name);
+                                card.classList.add("dragging");
+                            });
+                            card.addEventListener("dragend", () => {
+                                card.classList.remove("dragging");
+                            });
+                            td.appendChild(card);
+                        }
+                    }
+
+                    tr.appendChild(td);
+                }
+
+                tbody.appendChild(tr);
+            }
+            boardEl.appendChild(tbody);
+        }
+
+        const fileInput = document.getElementById("file-input");
+        const loadBtn = document.getElementById("load-btn");
+        const currentFileEl = document.getElementById("current-file");
+
+        loadBtn.addEventListener("click", () => fileInput.click());
+        fileInput.addEventListener("change", async () => {
+            const file = fileInput.files[0];
+            if (!file) return;
+            const form = new FormData();
+            form.append("file", file);
+            const res = await fetch("/api/upload", { method: "POST", body: form });
+            if (res.ok) {
+                const data = await res.json();
+                currentFileEl.textContent = data.filename;
+                currentFileEl.title = data.filename;
+                window.location.reload();
+            } else {
+                const err = await res.json();
+                alert(err.error || "Upload failed");
+            }
+            fileInput.value = "";
+        });
+
+        roleFilterEl.addEventListener("change", loadBoard);
+        jgFilterEl.addEventListener("change", loadBoard);
+        loadBoard();
+    </script>
+</body>
+</html>
