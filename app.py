@@ -17,6 +17,24 @@ TEMP_FILE = tempfile.NamedTemporaryFile(
     suffix=".xlsx", delete=False, prefix="kanban_"
 ).name
 
+LAST_FILE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "last_file.txt")
+
+
+def load_last_file():
+    """Load the last used file from disk if it exists."""
+    if os.path.exists(LAST_FILE_PATH):
+        with open(LAST_FILE_PATH, "r") as f:
+            filename = f.read().strip()
+        file_path = os.path.join(UPLOAD_DIR, filename)
+        if os.path.exists(file_path):
+            app.config["current_file"] = file_path
+            return True
+    return False
+
+
+# Load the last used file on startup
+load_last_file()
+
 
 def load_data():
     df = pd.read_excel(app.config["current_file"], sheet_name=0)
@@ -43,6 +61,9 @@ def api_upload():
     dest = os.path.join(UPLOAD_DIR, f.filename)
     f.save(dest)
     app.config["current_file"] = dest
+    # Save the filename for next startup
+    with open(LAST_FILE_PATH, "w") as lf:
+        lf.write(f.filename)
     return jsonify({"ok": True, "filename": f.filename})
 
 
