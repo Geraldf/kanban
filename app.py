@@ -122,5 +122,26 @@ def api_move():
     return jsonify({"ok": True, "name": name, "new_role": new_role, "new_jg": new_jg})
 
 
+@app.route("/api/edit", methods=["POST"])
+def api_edit():
+    data = request.get_json()
+    name = data.get("name", "")
+    proposed_role = data.get("proposed_role", "")
+    comment = data.get("comment", "")
+    if not name:
+        return jsonify({"error": "name required"}), 400
+
+    df = pd.read_excel(app.config["current_file"], sheet_name=0)
+    mask = df["Name"] == name
+    if not mask.any():
+        return jsonify({"error": f"Name '{name}' not found"}), 404
+
+    # Update the proposed role and comment columns
+    df.loc[mask, "Proposed new Role for Manager Review"] = proposed_role
+    df.loc[mask, "Comment"] = comment
+    df.to_excel(app.config["current_file"], index=False)
+    return jsonify({"ok": True, "name": name, "proposed_role": proposed_role, "comment": comment})
+
+
 if __name__ == "__main__":
     app.run(debug=True)

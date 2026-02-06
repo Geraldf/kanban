@@ -251,7 +251,115 @@
             text-align: center;
             padding: 20px 10px;
         }
-    </style>
+
+        /* Edit Modal Styles */
+        .edit-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .edit-modal.active {
+            display: flex;
+        }
+
+        .edit-modal-content {
+            background: #fff;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .edit-modal-header {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #2c3e50;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+        }
+
+        .form-group input:disabled {
+            background: #f5f5f5;
+            color: #999;
+            cursor: not-allowed;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+</style>
 </head>
 <body>
     <header>
@@ -287,11 +395,42 @@
         <table class="board-table" id="board"></table>
     </div>
 
+    <!-- Edit Modal -->
+    <div class="edit-modal" id="edit-modal">
+        <div class="edit-modal-content">
+            <div class="edit-modal-header">Edit Person</div>
+            <form id="edit-form">
+                <div class="form-group">
+                    <label for="edit-name">Name</label>
+                    <input type="text" id="edit-name" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="edit-role">Proposed Role</label>
+                    <input type="text" id="edit-role" placeholder="e.g., Senior Engineer">
+                </div>
+                <div class="form-group">
+                    <label for="edit-comment">Comment</label>
+                    <textarea id="edit-comment" placeholder="Add your comment here..."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="edit-cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         const boardEl = document.getElementById("board");
         const legendEl = document.getElementById("legend");
         const roleFilterEl = document.getElementById("role-filter");
         const jgFilterEl = document.getElementById("jg-filter");
+        const editModal = document.getElementById("edit-modal");
+        const editForm = document.getElementById("edit-form");
+        const editNameInput = document.getElementById("edit-name");
+        const editRoleInput = document.getElementById("edit-role");
+        const editCommentInput = document.getElementById("edit-comment");
+        const editCancelBtn = document.getElementById("edit-cancel");
 
         const PALETTE = [
             "#2ecc71", "#3498db", "#9b59b6", "#e67e22", "#e74c3c",
@@ -303,12 +442,27 @@
         let roleColorMap = {};
         let columnOrder = []; // Track custom column order
         let cachedData = null; // Cache API response for reordering
+        let currentEditingPerson = null; // Track which person is being edited
 
         function buildColorMap(roles) {
             roleColorMap = {};
             roles.forEach((name, i) => {
                 roleColorMap[name] = PALETTE[i % PALETTE.length];
             });
+        }
+
+        function showEditModal(person) {
+            currentEditingPerson = person;
+            editNameInput.value = person.name;
+            editRoleInput.value = person.proposed_role || "";
+            editCommentInput.value = person.comment || "";
+            editModal.classList.add("active");
+        }
+
+        function closeEditModal() {
+            editModal.classList.remove("active");
+            currentEditingPerson = null;
+            editForm.reset();
         }
 
         function renderLegend(roles) {
@@ -474,6 +628,9 @@
                             card.addEventListener("dragend", () => {
                                 card.classList.remove("dragging");
                             });
+                            card.addEventListener("dblclick", () => {
+                                showEditModal(p);
+                            });
                             td.appendChild(card);
                         }
                     }
@@ -489,6 +646,48 @@
         const fileInput = document.getElementById("file-input");
         const loadBtn = document.getElementById("load-btn");
         const currentFileEl = document.getElementById("current-file");
+
+        // Edit modal event listeners
+        editCancelBtn.addEventListener("click", closeEditModal);
+
+        editModal.addEventListener("click", (e) => {
+            if (e.target === editModal) closeEditModal();
+        });
+
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && editModal.classList.contains("active")) {
+                closeEditModal();
+            }
+        });
+
+        editForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            if (!currentEditingPerson) return;
+
+            const updatedData = {
+                name: currentEditingPerson.name,
+                proposed_role: editRoleInput.value,
+                comment: editCommentInput.value
+            };
+
+            try {
+                const res = await fetch("/api/edit", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(updatedData)
+                });
+
+                if (res.ok) {
+                    closeEditModal();
+                    loadBoard();
+                } else {
+                    const err = await res.json();
+                    alert(err.error || "Failed to save changes");
+                }
+            } catch (error) {
+                alert("Error saving changes: " + error.message);
+            }
+        });
 
         loadBtn.addEventListener("click", () => fileInput.click());
         fileInput.addEventListener("change", async () => {
