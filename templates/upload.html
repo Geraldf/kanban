@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kanban Board - Select File</title>
+    <title>KARL STORZ - Kanban Board</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: #f0f2f5;
-            color: #333;
+            font-family: Helvetica, Arial, sans-serif;
+            background: #eef1f5;
+            color: #1a1a1a;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -21,25 +21,34 @@
             background: #fff;
             border-radius: 12px;
             padding: 48px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 20px rgba(7, 63, 137, 0.12);
             text-align: center;
             max-width: 420px;
         }
 
         h1 {
             font-size: 1.5rem;
-            color: #2c3e50;
+            color: #073f89;
+            margin-bottom: 4px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: #162D59;
             margin-bottom: 12px;
+            font-weight: 500;
         }
 
         p {
-            color: #7f8c8d;
+            color: #5a6a7a;
             font-size: 0.95rem;
             margin-bottom: 28px;
         }
 
         .drop-zone {
-            border: 2px dashed #bdc3c7;
+            border: 2px dashed #a0aab8;
             border-radius: 8px;
             padding: 40px 20px;
             cursor: pointer;
@@ -47,17 +56,17 @@
         }
 
         .drop-zone:hover, .drop-zone.drag-over {
-            border-color: #3498db;
-            background: #ecf5fc;
+            border-color: #3a63b8;
+            background: #e8eef8;
         }
 
         .drop-zone-text {
             font-size: 0.95rem;
-            color: #7f8c8d;
+            color: #5a6a7a;
         }
 
         .drop-zone-text strong {
-            color: #3498db;
+            color: #073f89;
         }
 
         input[type="file"] {
@@ -65,21 +74,22 @@
         }
 
         .error {
-            color: #e74c3c;
+            color: #c0392b;
             margin-top: 16px;
             font-size: 0.88rem;
         }
 
         .loading {
             margin-top: 16px;
-            color: #3498db;
+            color: #3a63b8;
             font-size: 0.88rem;
         }
     </style>
 </head>
 <body>
     <div class="upload-container">
-        <h1>Kanban Board</h1>
+        <h1>KARL STORZ</h1>
+        <div class="subtitle">Kanban Board</div>
         <p>Select an Excel file (.xlsx) to load the board</p>
         <div class="drop-zone" id="drop-zone">
             <div class="drop-zone-text">

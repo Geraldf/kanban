@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Kanban Board - Role Review</title>
+    <title>KARL STORZ - Kanban Board</title>
     <style>
       * {
         margin: 0;
@@ -12,10 +12,9 @@
       }
 
       body {
-        font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        background: #f0f2f5;
-        color: #333;
+        font-family: Helvetica, Arial, sans-serif;
+        background: #eef1f5;
+        color: #1a1a1a;
         display: flex;
         flex-direction: column;
         height: 100vh;
@@ -23,7 +22,7 @@
       }
 
       header {
-        background: #2c3e50;
+        background: #073f89;
         color: #fff;
         padding: 16px 24px;
         display: flex;
@@ -35,6 +34,8 @@
       header h1 {
         font-size: 1.25rem;
         white-space: nowrap;
+        font-weight: 700;
+        letter-spacing: 0.02em;
       }
 
       .filter-bar {
@@ -53,6 +54,7 @@
         border: none;
         border-radius: 4px;
         font-size: 0.9rem;
+        font-family: inherit;
       }
 
       .file-bar {
@@ -78,11 +80,13 @@
         background: rgba(255, 255, 255, 0.15);
         color: #fff;
         font-size: 0.85rem;
+        font-family: inherit;
         cursor: pointer;
+        transition: background 0.2s;
       }
 
       .file-bar button:hover {
-        background: rgba(255, 255, 255, 0.25);
+        background: rgba(255, 255, 255, 0.3);
       }
 
       .legend {
@@ -91,14 +95,14 @@
         flex-wrap: wrap;
         padding: 12px 24px;
         background: #fff;
-        border-bottom: 1px solid #ddd;
+        border-bottom: 1px solid #d0d5dc;
         align-items: center;
       }
 
       .legend-title {
         font-size: 0.82rem;
         font-weight: 600;
-        color: #555;
+        color: #162D59;
       }
 
       .legend-item {
@@ -106,7 +110,7 @@
         align-items: center;
         gap: 5px;
         font-size: 0.78rem;
-        color: #555;
+        color: #444;
       }
 
       .legend-swatch {
@@ -129,7 +133,7 @@
       }
 
       .board-table th {
-        background: #3498db;
+        background: #3a63b8;
         color: #fff;
         padding: 12px 14px;
         border-radius: 8px;
@@ -159,7 +163,7 @@
       }
 
       .board-table th.jg-header {
-        background: #2c3e50;
+        background: #162D59;
         min-width: 20px;
         width: 20px;
         text-align: center;
@@ -169,7 +173,7 @@
       }
 
       .board-table th.jg-header:hover {
-        background: #34495e;
+        background: #1e3a6e;
       }
 
       .board-table th.jg-header .toggle {
@@ -185,7 +189,7 @@
       }
 
       .swimlane-label {
-        background: #34495e;
+        background: #162D59;
         color: #fff;
         padding: 10px 10px;
         border-radius: 8px;
@@ -200,7 +204,7 @@
       }
 
       .swimlane-label:hover {
-        background: #3d566e;
+        background: #1e3a6e;
       }
 
       .swimlane-label .toggle {
@@ -224,7 +228,7 @@
       }
 
       .cell {
-        background: #e8ecef;
+        background: #e4e8ee;
         border-radius: 8px;
         padding: 8px;
         vertical-align: top;
@@ -232,7 +236,7 @@
       }
 
       .cell.drag-over {
-        background: #d0d7dd;
+        background: #cdd3de;
       }
 
       .card {
@@ -240,7 +244,7 @@
         border-radius: 6px;
         padding: 10px 12px;
         margin-bottom: 8px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 1px 3px rgba(7, 63, 137, 0.1);
         font-size: 0.88rem;
         line-height: 1.4;
         border-left: 4px solid transparent;
@@ -264,12 +268,12 @@
 
       .card .name {
         font-weight: 600;
-        color: #2c3e50;
+        color: #162D59;
       }
 
       .card .meta {
         font-size: 0.78rem;
-        color: #7f8c8d;
+        color: #5a6a7a;
         margin-top: 4px;
       }
 
@@ -294,38 +298,42 @@
         padding: 20px 10px;
       }
 
-      /* Edit Modal Styles */
-      .edit-modal {
+      /* Modal Styles (shared between edit and settings) */
+      .modal-overlay {
         display: none;
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.5);
+        background: rgba(22, 45, 89, 0.5);
         z-index: 1000;
         align-items: center;
         justify-content: center;
       }
 
-      .edit-modal.active {
+      .modal-overlay.active {
         display: flex;
       }
 
-      .edit-modal-content {
+      .modal-content {
         background: #fff;
         border-radius: 8px;
         padding: 24px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 4px 16px rgba(7, 63, 137, 0.2);
         width: 90%;
         max-width: 400px;
       }
 
-      .edit-modal-header {
+      .modal-content.wide {
+        max-width: 500px;
+      }
+
+      .modal-header {
         font-size: 1.2rem;
         font-weight: 600;
         margin-bottom: 16px;
-        color: #2c3e50;
+        color: #073f89;
       }
 
       .form-group {
@@ -337,24 +345,26 @@
         font-size: 0.9rem;
         font-weight: 500;
         margin-bottom: 6px;
-        color: #555;
+        color: #444;
       }
 
       .form-group input,
-      .form-group textarea {
+      .form-group textarea,
+      .form-group select {
         width: 100%;
         padding: 8px 10px;
-        border: 1px solid #ddd;
+        border: 1px solid #c0c8d4;
         border-radius: 4px;
         font-size: 0.9rem;
         font-family: inherit;
       }
 
       .form-group input:focus,
-      .form-group textarea:focus {
+      .form-group textarea:focus,
+      .form-group select:focus {
         outline: none;
-        border-color: #3498db;
-        box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+        border-color: #3a63b8;
+        box-shadow: 0 0 0 2px rgba(58, 99, 184, 0.15);
       }
 
       .form-group input:disabled {
@@ -380,26 +390,27 @@
         border-radius: 4px;
         font-size: 0.9rem;
         font-weight: 500;
+        font-family: inherit;
         cursor: pointer;
         transition: background 0.2s;
       }
 
       .btn-primary {
-        background: #3498db;
+        background: #073f89;
         color: #fff;
       }
 
       .btn-primary:hover {
-        background: #2980b9;
+        background: #062f66;
       }
 
       .btn-secondary {
-        background: #e0e0e0;
-        color: #333;
+        background: #e0e4ea;
+        color: #162D59;
       }
 
       .btn-secondary:hover {
-        background: #d0d0d0;
+        background: #d0d5de;
       }
 
       /* Sort Toggle Switch */
@@ -429,7 +440,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background-color: #ccc;
+        background-color: #a0aab8;
         transition: 0.3s;
         border-radius: 20px;
       }
@@ -447,7 +458,7 @@
       }
 
       input:checked + .toggle-slider {
-        background-color: #3498db;
+        background-color: #3a63b8;
       }
 
       input:checked + .toggle-slider:before {
@@ -459,24 +470,48 @@
         font-weight: 500;
         white-space: nowrap;
       }
+
+      /* Checkbox list for card fields */
+      .checkbox-list {
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #c0c8d4;
+        border-radius: 4px;
+        padding: 8px;
+      }
+
+      .checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 0;
+        font-size: 0.9rem;
+        color: #1a1a1a;
+      }
+
+      .checkbox-item input[type="checkbox"] {
+        width: auto;
+        margin: 0;
+        accent-color: #073f89;
+      }
     </style>
   </head>
   <body>
     <header>
-      <h1>Kanban Board &mdash; Role Review</h1>
+      <h1>KARL STORZ &mdash; Kanban Board</h1>
       <div class="filter-bar">
-        <label for="role-filter">Role:</label>
+        <label for="role-filter">{{ board_col_name }}:</label>
         <select id="role-filter">
-          <option value="">All Roles</option>
+          <option value="">All</option>
           {% for role in roles %}
           <option value="{{ role }}">{{ role }}</option>
           {% endfor %}
         </select>
       </div>
       <div class="filter-bar">
-        <label for="jg-filter">JG:</label>
+        <label for="jg-filter">{{ swim_col_name }}:</label>
         <select id="jg-filter">
-          <option value="">All JG</option>
+          <option value="">All</option>
           {% for jg in jgs %}
           <option value="{{ jg }}">{{ jg }}</option>
           {% endfor %}
@@ -497,6 +532,7 @@
         >
         <input type="file" id="file-input" accept=".xlsx" hidden />
         <button type="button" id="load-btn">Load file...</button>
+        <button type="button" id="settings-btn">Settings</button>
       </div>
     </header>
 
@@ -507,31 +543,52 @@
     </div>
 
     <!-- Edit Modal -->
-    <div class="edit-modal" id="edit-modal">
-      <div class="edit-modal-content">
-        <div class="edit-modal-header">Edit Person</div>
+    <div class="modal-overlay" id="edit-modal">
+      <div class="modal-content">
+        <div class="modal-header">Edit Person</div>
         <form id="edit-form">
           <div class="form-group">
             <label for="edit-name">Name</label>
             <input type="text" id="edit-name" disabled />
           </div>
-          <div class="form-group">
-            <label for="edit-role">Proposed Role</label>
-            <input
-              type="text"
-              id="edit-role"
-              placeholder="e.g., Senior Engineer"
-            />
-          </div>
-          <div class="form-group">
-            <label for="edit-comment">Comment</label>
-            <textarea
-              id="edit-comment"
-              placeholder="Add your comment here..."
-            ></textarea>
-          </div>
+          <div id="edit-fields-container"></div>
           <div class="form-actions">
             <button type="button" class="btn btn-secondary" id="edit-cancel">
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settings-modal">
+      <div class="modal-content wide">
+        <div class="modal-header">Column Mapping</div>
+        <form id="settings-form">
+          <div class="form-group">
+            <label for="cfg-board-col">Board Columns</label>
+            <select id="cfg-board-col"></select>
+          </div>
+          <div class="form-group">
+            <label for="cfg-swim-col">Swimlane Rows</label>
+            <select id="cfg-swim-col"></select>
+          </div>
+          <div class="form-group">
+            <label>Card Header</label>
+            <input type="text" id="cfg-card-header" value="Name" disabled />
+          </div>
+          <div class="form-group">
+            <label>Card Fields (shown in cells)</label>
+            <div class="checkbox-list" id="cfg-card-fields"></div>
+          </div>
+          <div class="form-group">
+            <label>Dropdown Fields (use dropdown instead of text input when editing)</label>
+            <div class="checkbox-list" id="cfg-dropdown-fields"></div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" id="settings-cancel">
               Cancel
             </button>
             <button type="submit" class="btn btn-primary">Save</button>
@@ -549,9 +606,18 @@
       const editModal = document.getElementById("edit-modal");
       const editForm = document.getElementById("edit-form");
       const editNameInput = document.getElementById("edit-name");
-      const editRoleInput = document.getElementById("edit-role");
-      const editCommentInput = document.getElementById("edit-comment");
+      const editFieldsContainer = document.getElementById("edit-fields-container");
       const editCancelBtn = document.getElementById("edit-cancel");
+
+      const settingsModal = document.getElementById("settings-modal");
+      const settingsForm = document.getElementById("settings-form");
+      const settingsBtn = document.getElementById("settings-btn");
+      const settingsCancelBtn = document.getElementById("settings-cancel");
+      const cfgBoardCol = document.getElementById("cfg-board-col");
+      const cfgSwimCol = document.getElementById("cfg-swim-col");
+      const cfgCardHeader = document.getElementById("cfg-card-header");
+      const cfgCardFields = document.getElementById("cfg-card-fields");
+      const cfgDropdownFields = document.getElementById("cfg-dropdown-fields");
 
       const PALETTE = [
         "#2ecc71",
@@ -577,22 +643,20 @@
       ];
 
       let roleColorMap = {};
-      let columnOrder = []; // Track custom column order
-      let cachedData = null; // Cache API response for reordering
-      let currentEditingPerson = null; // Track which person is being edited
-      let sortByCellCount = false; // Track sort toggle state
-      let originalRoles = []; // Store original role order for toggling back
+      let columnOrder = [];
+      let cachedData = null;
+      let currentEditingPerson = null;
+      let sortByCellCount = false;
+      let originalRoles = [];
 
       function getTotalCountByRole() {
         const counts = {};
         if (!cachedData || !cachedData.roles) return counts;
 
-        // Initialize all roles with 0
         cachedData.roles.forEach((role) => {
           counts[role] = 0;
         });
 
-        // Count people in each role
         Object.values(cachedData.swimlanes).forEach((jgData) => {
           Object.entries(jgData).forEach(([role, people]) => {
             counts[role] = (counts[role] || 0) + people.length;
@@ -607,11 +671,10 @@
 
         const counts = getTotalCountByRole();
 
-        // Sort roles by count (descending), keeping the sort stable
         const sorted = [...columnOrder].sort((a, b) => {
           const countA = counts[a] || 0;
           const countB = counts[b] || 0;
-          return countB - countA; // Descending order
+          return countB - countA;
         });
 
         columnOrder = sorted;
@@ -624,11 +687,59 @@
         });
       }
 
+      function escapeHtml(str) {
+        const div = document.createElement("div");
+        div.textContent = str;
+        return div.innerHTML;
+      }
+
       function showEditModal(person) {
         currentEditingPerson = person;
         editNameInput.value = person.name;
-        editRoleInput.value = person.proposed_role || "";
-        editCommentInput.value = person.comment || "";
+
+        // Dynamically build form fields from card_fields
+        const cardFields = cachedData.card_fields || [];
+        const fieldOptions = cachedData.field_options || {};
+        editFieldsContainer.innerHTML = "";
+        for (const field of cardFields) {
+          const group = document.createElement("div");
+          group.className = "form-group";
+          const label = document.createElement("label");
+          label.textContent = field;
+          label.setAttribute("for", "edit-field-" + field);
+          group.appendChild(label);
+
+          const options = fieldOptions[field];
+          if (options && options.length > 0) {
+            // Render as dropdown
+            const select = document.createElement("select");
+            select.id = "edit-field-" + field;
+            select.dataset.field = field;
+            const emptyOpt = document.createElement("option");
+            emptyOpt.value = "";
+            emptyOpt.textContent = "— select —";
+            select.appendChild(emptyOpt);
+            for (const opt of options) {
+              const o = document.createElement("option");
+              o.value = opt;
+              o.textContent = opt;
+              if (opt === String(person[field] || "")) o.selected = true;
+              select.appendChild(o);
+            }
+            group.appendChild(select);
+          } else {
+            const input = document.createElement("input");
+            input.type = "text";
+            input.id = "edit-field-" + field;
+            input.dataset.field = field;
+            input.value = person[field] || "";
+            input.placeholder = field;
+            group.appendChild(input);
+          }
+
+          editFieldsContainer.appendChild(group);
+        }
+
         editModal.classList.add("active");
       }
 
@@ -636,6 +747,83 @@
         editModal.classList.remove("active");
         currentEditingPerson = null;
         editForm.reset();
+      }
+
+      // Settings modal
+      async function openSettingsModal() {
+        const res = await fetch("/api/columns");
+        if (!res.ok) return;
+        const data = await res.json();
+        const columns = data.columns;
+        const config = data.config;
+
+        // Populate board column dropdown
+        cfgBoardCol.innerHTML = "";
+        for (const col of columns) {
+          const opt = document.createElement("option");
+          opt.value = col;
+          opt.textContent = col;
+          if (col === config.board_column) opt.selected = true;
+          cfgBoardCol.appendChild(opt);
+        }
+
+        // Populate swimlane column dropdown
+        cfgSwimCol.innerHTML = "";
+        for (const col of columns) {
+          const opt = document.createElement("option");
+          opt.value = col;
+          opt.textContent = col;
+          if (col === config.swimlane_column) opt.selected = true;
+          cfgSwimCol.appendChild(opt);
+        }
+
+        // Card header (fixed)
+        cfgCardHeader.value = config.card_header;
+
+        // Card fields checkboxes (exclude card_header)
+        const dropdownFields = config.dropdown_fields || [];
+        cfgCardFields.innerHTML = "";
+        const excluded = new Set([config.card_header]);
+        for (const col of columns) {
+          if (excluded.has(col)) continue;
+          const item = document.createElement("label");
+          item.className = "checkbox-item";
+          const cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.value = col;
+          cb.checked = config.card_fields.includes(col);
+          cb.addEventListener("change", () => updateDropdownFieldsList());
+          item.appendChild(cb);
+          item.appendChild(document.createTextNode(col));
+          cfgCardFields.appendChild(item);
+        }
+
+        // Populate dropdown fields list based on selected card fields
+        function updateDropdownFieldsList() {
+          const selectedCardFields = [];
+          cfgCardFields.querySelectorAll("input[type=checkbox]:checked").forEach((cb) => {
+            selectedCardFields.push(cb.value);
+          });
+          cfgDropdownFields.innerHTML = "";
+          for (const field of selectedCardFields) {
+            const item = document.createElement("label");
+            item.className = "checkbox-item";
+            const cb = document.createElement("input");
+            cb.type = "checkbox";
+            cb.value = field;
+            cb.checked = dropdownFields.includes(field);
+            item.appendChild(cb);
+            item.appendChild(document.createTextNode(field));
+            cfgDropdownFields.appendChild(item);
+          }
+        }
+        updateDropdownFieldsList();
+
+        settingsModal.classList.add("active");
+      }
+
+      function closeSettingsModal() {
+        settingsModal.classList.remove("active");
       }
 
       function renderLegend(roles) {
@@ -646,7 +834,7 @@
               (name) =>
                 `<span class="legend-item">
                         <span class="legend-swatch" style="background:${roleColorMap[name]}"></span>
-                        ${name}
+                        ${escapeHtml(name)}
                     </span>`,
             )
             .join("");
@@ -661,12 +849,10 @@
         const res = await fetch(`/api/board${qs}`);
         cachedData = await res.json();
 
-        // Reset column order when data changes
         if (cachedData.roles) {
           columnOrder = [...cachedData.roles];
           originalRoles = [...cachedData.roles];
 
-          // Reapply sort if toggle is enabled
           if (sortByCellCount) {
             sortColumnsByCount();
           }
@@ -678,7 +864,7 @@
       function renderBoard() {
         if (!cachedData) return;
 
-        const { jgs, swimlanes } = cachedData;
+        const { jgs, swimlanes, card_fields } = cachedData;
         const roles = columnOrder;
 
         boardEl.innerHTML = "";
@@ -699,10 +885,9 @@
 
         const jgHeader = document.createElement("th");
         jgHeader.className = "jg-header";
-        jgHeader.innerHTML = '<span class="toggle">▼</span>JG';
+        jgHeader.innerHTML = '<span class="toggle">&#9660;</span>JG';
         jgHeader.draggable = false;
         jgHeader.addEventListener("click", () => {
-          // Toggle all JG rows
           const allJgRows = document.querySelectorAll("tr[data-jg]");
           const allCollapsed = jgHeader.classList.contains("all-collapsed");
 
@@ -752,7 +937,6 @@
             const draggedRole = e.dataTransfer.getData("text/column");
             if (!draggedRole || draggedRole === role) return;
 
-            // Reorder columns
             const fromIdx = columnOrder.indexOf(draggedRole);
             const toIdx = columnOrder.indexOf(role);
             if (fromIdx !== -1 && toIdx !== -1) {
@@ -773,17 +957,15 @@
           const tr = document.createElement("tr");
           tr.dataset.jg = jg;
 
-          // JG label cell
           const jgCell = document.createElement("td");
           jgCell.className = "swimlane-label";
-          jgCell.innerHTML = `<span class="toggle">▼</span>${jg}`;
+          jgCell.innerHTML = `<span class="toggle">&#9660;</span>${escapeHtml(String(jg))}`;
           jgCell.addEventListener("click", () => {
             tr.classList.toggle("collapsed");
             jgCell.classList.toggle("collapsed");
           });
           tr.appendChild(jgCell);
 
-          // Role cells
           for (const role of roles) {
             const td = document.createElement("td");
             td.className = "cell";
@@ -827,11 +1009,17 @@
                 card.className = "card";
                 card.style.borderLeftColor = roleColorMap[role];
                 card.draggable = true;
-                card.innerHTML = `
-                                <div class="name">${p.name}</div>
-                                <div class="meta">Proposed: ${p.proposed_role}</div>
-                                ${p.comment ? `<div class="comment">${p.comment}</div>` : ""}
-                            `;
+
+                // Build card content dynamically
+                let html = `<div class="name">${escapeHtml(p.name)}</div>`;
+                for (const field of (card_fields || [])) {
+                  const val = p[field];
+                  if (val) {
+                    html += `<div class="meta">${escapeHtml(field)}: ${escapeHtml(String(val))}</div>`;
+                  }
+                }
+                card.innerHTML = html;
+
                 card.addEventListener("dragstart", (e) => {
                   e.dataTransfer.setData("text/plain", p.name);
                   card.classList.add("dragging");
@@ -866,8 +1054,9 @@
       });
 
       document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape" && editModal.classList.contains("active")) {
-          closeEditModal();
+        if (e.key === "Escape") {
+          if (editModal.classList.contains("active")) closeEditModal();
+          if (settingsModal.classList.contains("active")) closeSettingsModal();
         }
       });
 
@@ -875,11 +1064,11 @@
         e.preventDefault();
         if (!currentEditingPerson) return;
 
-        const updatedData = {
-          name: currentEditingPerson.name,
-          proposed_role: editRoleInput.value,
-          comment: editCommentInput.value,
-        };
+        const updatedData = { name: currentEditingPerson.name };
+        // Collect values from dynamic fields (inputs and selects)
+        editFieldsContainer.querySelectorAll("[data-field]").forEach((el) => {
+          updatedData[el.dataset.field] = el.value;
+        });
 
         try {
           const res = await fetch("/api/edit", {
@@ -897,6 +1086,52 @@
           }
         } catch (error) {
           alert("Error saving changes: " + error.message);
+        }
+      });
+
+      // Settings modal event listeners
+      settingsBtn.addEventListener("click", openSettingsModal);
+      settingsCancelBtn.addEventListener("click", closeSettingsModal);
+      settingsModal.addEventListener("click", (e) => {
+        if (e.target === settingsModal) closeSettingsModal();
+      });
+
+      settingsForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const selectedFields = [];
+        cfgCardFields.querySelectorAll("input[type=checkbox]:checked").forEach((cb) => {
+          selectedFields.push(cb.value);
+        });
+
+        const selectedDropdowns = [];
+        cfgDropdownFields.querySelectorAll("input[type=checkbox]:checked").forEach((cb) => {
+          selectedDropdowns.push(cb.value);
+        });
+
+        const config = {
+          board_column: cfgBoardCol.value,
+          swimlane_column: cfgSwimCol.value,
+          card_fields: selectedFields,
+          dropdown_fields: selectedDropdowns,
+        };
+
+        try {
+          const res = await fetch("/api/columns", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(config),
+          });
+
+          if (res.ok) {
+            closeSettingsModal();
+            window.location.reload();
+          } else {
+            const err = await res.json();
+            alert(err.error || "Failed to save settings");
+          }
+        } catch (error) {
+          alert("Error saving settings: " + error.message);
         }
       });
 
@@ -928,7 +1163,6 @@
         if (sortByCellCount) {
           sortColumnsByCount();
         } else {
-          // Restore original order
           columnOrder = [...originalRoles];
         }
         renderBoard();

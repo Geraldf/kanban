@@ -4,7 +4,9 @@
       "Bash(pip3 install:*)",
       "Bash(python3:*)",
       "Bash(source:*)",
-      "Bash(pip install:*)"
+      "Bash(pip install:*)",
+      "WebFetch(domain:www.karlstorz.com)",
+      "WebFetch(domain:brandfetch.com)"
     ]
   }
 }

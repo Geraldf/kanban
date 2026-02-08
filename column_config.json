@@ -1,0 +1,12 @@
+{
+  "board_column": "Role",
+  "swimlane_column": "New JG",
+  "card_header": "Name",
+  "card_fields": [
+    "Proposed new Role",
+    "Comment"
+  ],
+  "dropdown_fields": [
+    "Proposed new Role"
+  ]
+}
