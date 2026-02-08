@@ -1,887 +1,940 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Kanban Board - Role Review</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: #f0f2f5;
-            color: #333;
-        }
-
-        header {
-            background: #2c3e50;
-            color: #fff;
-            padding: 16px 24px;
-            display: flex;
-            align-items: center;
-            gap: 24px;
-            flex-wrap: wrap;
-        }
-
-        header h1 {
-            font-size: 1.25rem;
-            white-space: nowrap;
-        }
-
-        .filter-bar {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .filter-bar label {
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-
-        .filter-bar select {
-            padding: 6px 12px;
-            border: none;
-            border-radius: 4px;
-            font-size: 0.9rem;
-        }
-
-        .file-bar {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-left: auto;
-        }
-
-        .file-bar .filename {
-            font-size: 0.82rem;
-            opacity: 0.8;
-            max-width: 180px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .file-bar button {
-            padding: 6px 14px;
-            border: 1px solid rgba(255,255,255,0.4);
-            border-radius: 4px;
-            background: rgba(255,255,255,0.15);
-            color: #fff;
-            font-size: 0.85rem;
-            cursor: pointer;
-        }
-
-        .file-bar button:hover {
-            background: rgba(255,255,255,0.25);
-        }
-
-        .legend {
-            display: flex;
-            gap: 14px;
-            flex-wrap: wrap;
-            padding: 12px 24px;
-            background: #fff;
-            border-bottom: 1px solid #ddd;
-            align-items: center;
-        }
-
-        .legend-title {
-            font-size: 0.82rem;
-            font-weight: 600;
-            color: #555;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 0.78rem;
-            color: #555;
-        }
-
-        .legend-swatch {
-            width: 14px;
-            height: 14px;
-            border-radius: 3px;
-        }
-
-        .board-wrapper {
-            overflow: auto;
-            padding: 20px;
-        }
-
-        .board-table {
-            border-collapse: separate;
-            border-spacing: 8px;
-            min-width: 100%;
-        }
-
-        .board-table thead {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .board-table th {
-            background: #3498db;
-            color: #fff;
-            padding: 12px 14px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            min-width: 200px;
-            text-align: left;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            cursor: grab;
-            -webkit-user-select: none;
-            user-select: none;
-        }
-
-        .board-table th:active { cursor: grabbing; }
-
-        .board-table th.dragging { opacity: 0.4; }
-
-        .board-table th.drag-over {
-            outline: 2px dashed #fff;
-            outline-offset: -4px;
-        }
-
-        .board-table th.jg-header {
-            background: #2c3e50;
-            min-width: 20px;
-            width: 20px;
-            text-align: center;
-            cursor: pointer;
-            user-select: none;
-            position: sticky;
-            top: 0;
-            z-index: 101;
-        }
-
-        .board-table th.jg-header:hover {
-            background: #34495e;
-        }
-
-        .board-table th.jg-header .toggle {
-            display: inline-block;
-            width: 18px;
-            margin-right: 4px;
-            transition: transform 0.2s;
-            font-size: 0.9rem;
-        }
-
-        .board-table th.jg-header.all-collapsed .toggle {
-            transform: rotate(-90deg);
-        }
-
-        .swimlane-label {
-            background: #34495e;
-            color: #fff;
-            padding: 10px 10px;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 700;
-            text-align: center;
-            vertical-align: top;
-            cursor: pointer;
-            -webkit-user-select: none;
-            user-select: none;
-            white-space: nowrap;
-        }
-
-        .swimlane-label:hover {
-            background: #3d566e;
-        }
-
-        .swimlane-label .toggle {
-            display: inline-block;
-            width: 18px;
-            margin-right: 6px;
-            transition: transform 0.2s;
-        }
-
-        .swimlane-label.collapsed .toggle {
-            transform: rotate(-90deg);
-        }
-
-        tr.collapsed td.cell {
-            display: none;
-        }
-
-        tr.collapsed td.swimlane-label {
-            border-radius: 8px;
-            padding: 8px 14px;
-        }
-
-        .cell {
-            background: #e8ecef;
-            border-radius: 8px;
-            padding: 8px;
-            vertical-align: top;
-            min-height: 100px;
-        }
-
-        .cell.drag-over {
-            background: #d0d7dd;
-        }
-
-        .card {
-            background: #fff;
-            border-radius: 6px;
-            padding: 10px 12px;
-            margin-bottom: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            font-size: 0.88rem;
-            line-height: 1.4;
-            border-left: 4px solid transparent;
-            cursor: grab;
-            transition: opacity 0.2s, box-shadow 0.2s;
-        }
-
-        .card:last-child { margin-bottom: 0; }
-
-        .card:active { cursor: grabbing; }
-
-        .card.dragging { opacity: 0.4; }
-
-        .card .name {
-            font-weight: 600;
-            color: #2c3e50;
-        }
-
-        .card .meta {
-            font-size: 0.78rem;
-            color: #7f8c8d;
-            margin-top: 4px;
-        }
-
-        .card .comment {
-            font-size: 0.78rem;
-            color: #555;
-            margin-top: 4px;
-            font-style: italic;
-        }
-
-        .empty-msg {
-            text-align: center;
-            color: #999;
-            padding: 40px 20px;
-            font-size: 0.95rem;
-        }
-
-        .cell-empty {
-            color: #bbb;
-            font-size: 0.8rem;
-            text-align: center;
-            padding: 20px 10px;
-        }
-
-        /* Edit Modal Styles */
-        .edit-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .edit-modal.active {
-            display: flex;
-        }
-
-        .edit-modal-content {
-            background: #fff;
-            border-radius: 8px;
-            padding: 24px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            width: 90%;
-            max-width: 400px;
-        }
-
-        .edit-modal-header {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 16px;
-            color: #2c3e50;
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 0.9rem;
-            font-weight: 500;
-            margin-bottom: 6px;
-            color: #555;
-        }
-
-        .form-group input,
-        .form-group textarea {
-            width: 100%;
-            padding: 8px 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 0.9rem;
-            font-family: inherit;
-        }
-
-        .form-group input:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #3498db;
-            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
-        }
-
-        .form-group input:disabled {
-            background: #f5f5f5;
-            color: #999;
-            cursor: not-allowed;
-        }
-
-        .form-group textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
-
-        .form-actions {
-            display: flex;
-            gap: 8px;
-            justify-content: flex-end;
-        }
-
-        .btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .btn-primary {
-            background: #3498db;
-            color: #fff;
-        }
-
-        .btn-primary:hover {
-            background: #2980b9;
-        }
-
-        .btn-secondary {
-            background: #e0e0e0;
-            color: #333;
-        }
-
-        .btn-secondary:hover {
-            background: #d0d0d0;
-        }
-
-        /* Sort Toggle Switch */
-        .sort-toggle-container {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 40px;
-            height: 20px;
-        }
-
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .toggle-slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: 0.3s;
-            border-radius: 20px;
-        }
-
-        .toggle-slider:before {
-            position: absolute;
-            content: "";
-            height: 16px;
-            width: 16px;
-            left: 2px;
-            bottom: 2px;
-            background-color: white;
-            transition: 0.3s;
-            border-radius: 50%;
-        }
-
-        input:checked + .toggle-slider {
-            background-color: #3498db;
-        }
-
-        input:checked + .toggle-slider:before {
-            transform: translateX(20px);
-        }
-
-        .sort-toggle-label {
-            font-size: 0.9rem;
-            font-weight: 500;
-            white-space: nowrap;
-        }
-</style>
-</head>
-<body>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #f0f2f5;
+        color: #333;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      header {
+        background: #2c3e50;
+        color: #fff;
+        padding: 16px 24px;
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+
+      header h1 {
+        font-size: 1.25rem;
+        white-space: nowrap;
+      }
+
+      .filter-bar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .filter-bar label {
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+
+      .filter-bar select {
+        padding: 6px 12px;
+        border: none;
+        border-radius: 4px;
+        font-size: 0.9rem;
+      }
+
+      .file-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: auto;
+      }
+
+      .file-bar .filename {
+        font-size: 0.82rem;
+        opacity: 0.8;
+        max-width: 180px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .file-bar button {
+        padding: 6px 14px;
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.15);
+        color: #fff;
+        font-size: 0.85rem;
+        cursor: pointer;
+      }
+
+      .file-bar button:hover {
+        background: rgba(255, 255, 255, 0.25);
+      }
+
+      .legend {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+        padding: 12px 24px;
+        background: #fff;
+        border-bottom: 1px solid #ddd;
+        align-items: center;
+      }
+
+      .legend-title {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #555;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.78rem;
+        color: #555;
+      }
+
+      .legend-swatch {
+        width: 14px;
+        height: 14px;
+        border-radius: 3px;
+      }
+
+      .board-wrapper {
+        overflow: auto;
+        padding: 2px;
+        flex: 1;
+        min-height: 0;
+      }
+
+      .board-table {
+        border-collapse: separate;
+        border-spacing: 8px;
+        min-width: 100%;
+      }
+
+      .board-table th {
+        background: #3498db;
+        color: #fff;
+        padding: 12px 14px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        min-width: 200px;
+        text-align: left;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        cursor: grab;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+
+      .board-table th:active {
+        cursor: grabbing;
+      }
+
+      .board-table th.dragging {
+        opacity: 0.4;
+      }
+
+      .board-table th.drag-over {
+        outline: 2px dashed #fff;
+        outline-offset: -4px;
+      }
+
+      .board-table th.jg-header {
+        background: #2c3e50;
+        min-width: 20px;
+        width: 20px;
+        text-align: center;
+        cursor: pointer;
+        user-select: none;
+        position: relative;
+      }
+
+      .board-table th.jg-header:hover {
+        background: #34495e;
+      }
+
+      .board-table th.jg-header .toggle {
+        display: inline-block;
+        width: 18px;
+        margin-right: 4px;
+        transition: transform 0.2s;
+        font-size: 0.9rem;
+      }
+
+      .board-table th.jg-header.all-collapsed .toggle {
+        transform: rotate(-90deg);
+      }
+
+      .swimlane-label {
+        background: #34495e;
+        color: #fff;
+        padding: 10px 10px;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 700;
+        text-align: center;
+        vertical-align: top;
+        cursor: pointer;
+        -webkit-user-select: none;
+        user-select: none;
+        white-space: nowrap;
+      }
+
+      .swimlane-label:hover {
+        background: #3d566e;
+      }
+
+      .swimlane-label .toggle {
+        display: inline-block;
+        width: 18px;
+        margin-right: 6px;
+        transition: transform 0.2s;
+      }
+
+      .swimlane-label.collapsed .toggle {
+        transform: rotate(-90deg);
+      }
+
+      tr.collapsed td.cell {
+        display: none;
+      }
+
+      tr.collapsed td.swimlane-label {
+        border-radius: 8px;
+        padding: 8px 14px;
+      }
+
+      .cell {
+        background: #e8ecef;
+        border-radius: 8px;
+        padding: 8px;
+        vertical-align: top;
+        min-height: 100px;
+      }
+
+      .cell.drag-over {
+        background: #d0d7dd;
+      }
+
+      .card {
+        background: #fff;
+        border-radius: 6px;
+        padding: 10px 12px;
+        margin-bottom: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        font-size: 0.88rem;
+        line-height: 1.4;
+        border-left: 4px solid transparent;
+        cursor: grab;
+        transition:
+          opacity 0.2s,
+          box-shadow 0.2s;
+      }
+
+      .card:last-child {
+        margin-bottom: 0;
+      }
+
+      .card:active {
+        cursor: grabbing;
+      }
+
+      .card.dragging {
+        opacity: 0.4;
+      }
+
+      .card .name {
+        font-weight: 600;
+        color: #2c3e50;
+      }
+
+      .card .meta {
+        font-size: 0.78rem;
+        color: #7f8c8d;
+        margin-top: 4px;
+      }
+
+      .card .comment {
+        font-size: 0.78rem;
+        color: #555;
+        margin-top: 4px;
+        font-style: italic;
+      }
+
+      .empty-msg {
+        text-align: center;
+        color: #999;
+        padding: 40px 20px;
+        font-size: 0.95rem;
+      }
+
+      .cell-empty {
+        color: #bbb;
+        font-size: 0.8rem;
+        text-align: center;
+        padding: 20px 10px;
+      }
+
+      /* Edit Modal Styles */
+      .edit-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .edit-modal.active {
+        display: flex;
+      }
+
+      .edit-modal-content {
+        background: #fff;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        width: 90%;
+        max-width: 400px;
+      }
+
+      .edit-modal-header {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 16px;
+        color: #2c3e50;
+      }
+
+      .form-group {
+        margin-bottom: 16px;
+      }
+
+      .form-group label {
+        display: block;
+        font-size: 0.9rem;
+        font-weight: 500;
+        margin-bottom: 6px;
+        color: #555;
+      }
+
+      .form-group input,
+      .form-group textarea {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        font-family: inherit;
+      }
+
+      .form-group input:focus,
+      .form-group textarea:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+      }
+
+      .form-group input:disabled {
+        background: #f5f5f5;
+        color: #999;
+        cursor: not-allowed;
+      }
+
+      .form-group textarea {
+        resize: vertical;
+        min-height: 80px;
+      }
+
+      .form-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+
+      .btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      .btn-primary {
+        background: #3498db;
+        color: #fff;
+      }
+
+      .btn-primary:hover {
+        background: #2980b9;
+      }
+
+      .btn-secondary {
+        background: #e0e0e0;
+        color: #333;
+      }
+
+      .btn-secondary:hover {
+        background: #d0d0d0;
+      }
+
+      /* Sort Toggle Switch */
+      .sort-toggle-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 40px;
+        height: 20px;
+      }
+
+      .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: 0.3s;
+        border-radius: 20px;
+      }
+
+      .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 16px;
+        width: 16px;
+        left: 2px;
+        bottom: 2px;
+        background-color: white;
+        transition: 0.3s;
+        border-radius: 50%;
+      }
+
+      input:checked + .toggle-slider {
+        background-color: #3498db;
+      }
+
+      input:checked + .toggle-slider:before {
+        transform: translateX(20px);
+      }
+
+      .sort-toggle-label {
+        font-size: 0.9rem;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+    </style>
+  </head>
+  <body>
     <header>
-        <h1>Kanban Board &mdash; Role Review</h1>
-        <div class="filter-bar">
-            <label for="role-filter">Role:</label>
-            <select id="role-filter">
-                <option value="">All Roles</option>
-                {% for role in roles %}
-                <option value="{{ role }}">{{ role }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="filter-bar">
-            <label for="jg-filter">JG:</label>
-            <select id="jg-filter">
-                <option value="">All JG</option>
-                {% for jg in jgs %}
-                <option value="{{ jg }}">{{ jg }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="sort-toggle-container">
-            <label class="sort-toggle-label" for="sort-by-count">Sort by Count:</label>
-            <label class="toggle-switch">
-                <input type="checkbox" id="sort-by-count">
-                <span class="toggle-slider"></span>
-            </label>
-        </div>
-        <div class="file-bar">
-            <span class="filename" id="current-file" title="{{ filename }}">{{ filename }}</span>
-            <input type="file" id="file-input" accept=".xlsx" hidden>
-            <button type="button" id="load-btn">Load file...</button>
-        </div>
+      <h1>Kanban Board &mdash; Role Review</h1>
+      <div class="filter-bar">
+        <label for="role-filter">Role:</label>
+        <select id="role-filter">
+          <option value="">All Roles</option>
+          {% for role in roles %}
+          <option value="{{ role }}">{{ role }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-bar">
+        <label for="jg-filter">JG:</label>
+        <select id="jg-filter">
+          <option value="">All JG</option>
+          {% for jg in jgs %}
+          <option value="{{ jg }}">{{ jg }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="sort-toggle-container">
+        <label class="sort-toggle-label" for="sort-by-count"
+          >Sort by Count:</label
+        >
+        <label class="toggle-switch">
+          <input type="checkbox" id="sort-by-count" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="file-bar">
+        <span class="filename" id="current-file" title="{{ filename }}"
+          >{{ filename }}</span
+        >
+        <input type="file" id="file-input" accept=".xlsx" hidden />
+        <button type="button" id="load-btn">Load file...</button>
+      </div>
     </header>
 
     <div class="legend" id="legend"></div>
 
     <div class="board-wrapper">
-        <table class="board-table" id="board"></table>
+      <table class="board-table" id="board"></table>
     </div>
 
     <!-- Edit Modal -->
     <div class="edit-modal" id="edit-modal">
-        <div class="edit-modal-content">
-            <div class="edit-modal-header">Edit Person</div>
-            <form id="edit-form">
-                <div class="form-group">
-                    <label for="edit-name">Name</label>
-                    <input type="text" id="edit-name" disabled>
-                </div>
-                <div class="form-group">
-                    <label for="edit-role">Proposed Role</label>
-                    <input type="text" id="edit-role" placeholder="e.g., Senior Engineer">
-                </div>
-                <div class="form-group">
-                    <label for="edit-comment">Comment</label>
-                    <textarea id="edit-comment" placeholder="Add your comment here..."></textarea>
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="edit-cancel">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save</button>
-                </div>
-            </form>
-        </div>
+      <div class="edit-modal-content">
+        <div class="edit-modal-header">Edit Person</div>
+        <form id="edit-form">
+          <div class="form-group">
+            <label for="edit-name">Name</label>
+            <input type="text" id="edit-name" disabled />
+          </div>
+          <div class="form-group">
+            <label for="edit-role">Proposed Role</label>
+            <input
+              type="text"
+              id="edit-role"
+              placeholder="e.g., Senior Engineer"
+            />
+          </div>
+          <div class="form-group">
+            <label for="edit-comment">Comment</label>
+            <textarea
+              id="edit-comment"
+              placeholder="Add your comment here..."
+            ></textarea>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" id="edit-cancel">
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">Save</button>
+          </div>
+        </form>
+      </div>
     </div>
 
     <script>
-        const boardEl = document.getElementById("board");
-        const legendEl = document.getElementById("legend");
-        const roleFilterEl = document.getElementById("role-filter");
-        const jgFilterEl = document.getElementById("jg-filter");
-        const sortByCountToggle = document.getElementById("sort-by-count");
-        const editModal = document.getElementById("edit-modal");
-        const editForm = document.getElementById("edit-form");
-        const editNameInput = document.getElementById("edit-name");
-        const editRoleInput = document.getElementById("edit-role");
-        const editCommentInput = document.getElementById("edit-comment");
-        const editCancelBtn = document.getElementById("edit-cancel");
+      const boardEl = document.getElementById("board");
+      const legendEl = document.getElementById("legend");
+      const roleFilterEl = document.getElementById("role-filter");
+      const jgFilterEl = document.getElementById("jg-filter");
+      const sortByCountToggle = document.getElementById("sort-by-count");
+      const editModal = document.getElementById("edit-modal");
+      const editForm = document.getElementById("edit-form");
+      const editNameInput = document.getElementById("edit-name");
+      const editRoleInput = document.getElementById("edit-role");
+      const editCommentInput = document.getElementById("edit-comment");
+      const editCancelBtn = document.getElementById("edit-cancel");
 
-        const PALETTE = [
-            "#2ecc71", "#3498db", "#9b59b6", "#e67e22", "#e74c3c",
-            "#1abc9c", "#f39c12", "#8e44ad", "#2980b9", "#27ae60",
-            "#d35400", "#c0392b", "#16a085", "#7f8c8d", "#2c3e50",
-            "#e84393", "#00b894", "#6c5ce7", "#fdcb6e", "#0984e3"
-        ];
+      const PALETTE = [
+        "#2ecc71",
+        "#3498db",
+        "#9b59b6",
+        "#e67e22",
+        "#e74c3c",
+        "#1abc9c",
+        "#f39c12",
+        "#8e44ad",
+        "#2980b9",
+        "#27ae60",
+        "#d35400",
+        "#c0392b",
+        "#16a085",
+        "#7f8c8d",
+        "#2c3e50",
+        "#e84393",
+        "#00b894",
+        "#6c5ce7",
+        "#fdcb6e",
+        "#0984e3",
+      ];
 
-        let roleColorMap = {};
-        let columnOrder = []; // Track custom column order
-        let cachedData = null; // Cache API response for reordering
-        let currentEditingPerson = null; // Track which person is being edited
-        let sortByCellCount = false; // Track sort toggle state
-        let originalRoles = []; // Store original role order for toggling back
+      let roleColorMap = {};
+      let columnOrder = []; // Track custom column order
+      let cachedData = null; // Cache API response for reordering
+      let currentEditingPerson = null; // Track which person is being edited
+      let sortByCellCount = false; // Track sort toggle state
+      let originalRoles = []; // Store original role order for toggling back
 
-        function getTotalCountByRole() {
-            const counts = {};
-            if (!cachedData || !cachedData.roles) return counts;
+      function getTotalCountByRole() {
+        const counts = {};
+        if (!cachedData || !cachedData.roles) return counts;
 
-            // Initialize all roles with 0
-            cachedData.roles.forEach(role => {
-                counts[role] = 0;
-            });
+        // Initialize all roles with 0
+        cachedData.roles.forEach((role) => {
+          counts[role] = 0;
+        });
 
-            // Count people in each role
-            Object.values(cachedData.swimlanes).forEach(jgData => {
-                Object.entries(jgData).forEach(([role, people]) => {
-                    counts[role] = (counts[role] || 0) + people.length;
-                });
-            });
+        // Count people in each role
+        Object.values(cachedData.swimlanes).forEach((jgData) => {
+          Object.entries(jgData).forEach(([role, people]) => {
+            counts[role] = (counts[role] || 0) + people.length;
+          });
+        });
 
-            return counts;
-        }
+        return counts;
+      }
 
-        function sortColumnsByCount() {
-            if (!cachedData || !cachedData.roles) return;
+      function sortColumnsByCount() {
+        if (!cachedData || !cachedData.roles) return;
 
-            const counts = getTotalCountByRole();
+        const counts = getTotalCountByRole();
 
-            // Sort roles by count (descending), keeping the sort stable
-            const sorted = [...columnOrder].sort((a, b) => {
-                const countA = counts[a] || 0;
-                const countB = counts[b] || 0;
-                return countB - countA; // Descending order
-            });
+        // Sort roles by count (descending), keeping the sort stable
+        const sorted = [...columnOrder].sort((a, b) => {
+          const countA = counts[a] || 0;
+          const countB = counts[b] || 0;
+          return countB - countA; // Descending order
+        });
 
-            columnOrder = sorted;
-        }
+        columnOrder = sorted;
+      }
 
-        function buildColorMap(roles) {
-            roleColorMap = {};
-            roles.forEach((name, i) => {
-                roleColorMap[name] = PALETTE[i % PALETTE.length];
-            });
-        }
+      function buildColorMap(roles) {
+        roleColorMap = {};
+        roles.forEach((name, i) => {
+          roleColorMap[name] = PALETTE[i % PALETTE.length];
+        });
+      }
 
-        function showEditModal(person) {
-            currentEditingPerson = person;
-            editNameInput.value = person.name;
-            editRoleInput.value = person.proposed_role || "";
-            editCommentInput.value = person.comment || "";
-            editModal.classList.add("active");
-        }
+      function showEditModal(person) {
+        currentEditingPerson = person;
+        editNameInput.value = person.name;
+        editRoleInput.value = person.proposed_role || "";
+        editCommentInput.value = person.comment || "";
+        editModal.classList.add("active");
+      }
 
-        function closeEditModal() {
-            editModal.classList.remove("active");
-            currentEditingPerson = null;
-            editForm.reset();
-        }
+      function closeEditModal() {
+        editModal.classList.remove("active");
+        currentEditingPerson = null;
+        editForm.reset();
+      }
 
-        function renderLegend(roles) {
-            legendEl.innerHTML = '<span class="legend-title">Roles:</span>' +
-                roles.map(name =>
-                    `<span class="legend-item">
+      function renderLegend(roles) {
+        legendEl.innerHTML =
+          '<span class="legend-title">Roles:</span>' +
+          roles
+            .map(
+              (name) =>
+                `<span class="legend-item">
                         <span class="legend-swatch" style="background:${roleColorMap[name]}"></span>
                         ${name}
-                    </span>`
-                ).join("");
+                    </span>`,
+            )
+            .join("");
+      }
+
+      async function loadBoard() {
+        const params = new URLSearchParams();
+        if (roleFilterEl.value) params.set("role", roleFilterEl.value);
+        if (jgFilterEl.value) params.set("jg", jgFilterEl.value);
+        const qs = params.toString() ? `?${params}` : "";
+
+        const res = await fetch(`/api/board${qs}`);
+        cachedData = await res.json();
+
+        // Reset column order when data changes
+        if (cachedData.roles) {
+          columnOrder = [...cachedData.roles];
+          originalRoles = [...cachedData.roles];
+
+          // Reapply sort if toggle is enabled
+          if (sortByCellCount) {
+            sortColumnsByCount();
+          }
         }
 
-        async function loadBoard() {
-            const params = new URLSearchParams();
-            if (roleFilterEl.value) params.set("role", roleFilterEl.value);
-            if (jgFilterEl.value) params.set("jg", jgFilterEl.value);
-            const qs = params.toString() ? `?${params}` : "";
+        renderBoard();
+      }
 
-            const res = await fetch(`/api/board${qs}`);
-            cachedData = await res.json();
+      function renderBoard() {
+        if (!cachedData) return;
 
-            // Reset column order when data changes
-            if (cachedData.roles) {
-                columnOrder = [...cachedData.roles];
-                originalRoles = [...cachedData.roles];
+        const { jgs, swimlanes } = cachedData;
+        const roles = columnOrder;
 
-                // Reapply sort if toggle is enabled
-                if (sortByCellCount) {
-                    sortColumnsByCount();
-                }
-            }
+        boardEl.innerHTML = "";
 
-            renderBoard();
+        if (!roles || roles.length === 0 || !jgs || jgs.length === 0) {
+          boardEl.innerHTML =
+            '<tr><td class="empty-msg">No entries found for the selected filters.</td></tr>';
+          legendEl.innerHTML = "";
+          return;
         }
 
-        function renderBoard() {
-            if (!cachedData) return;
+        buildColorMap(roles);
+        renderLegend(roles);
 
-            const { jgs, swimlanes } = cachedData;
-            const roles = columnOrder;
+        // Header row with draggable columns
+        const thead = document.createElement("thead");
+        const headerRow = document.createElement("tr");
 
-            boardEl.innerHTML = "";
+        const jgHeader = document.createElement("th");
+        jgHeader.className = "jg-header";
+        jgHeader.innerHTML = '<span class="toggle">▼</span>JG';
+        jgHeader.draggable = false;
+        jgHeader.addEventListener("click", () => {
+          // Toggle all JG rows
+          const allJgRows = document.querySelectorAll("tr[data-jg]");
+          const allCollapsed = jgHeader.classList.contains("all-collapsed");
 
-            if (!roles || roles.length === 0 || !jgs || jgs.length === 0) {
-                boardEl.innerHTML = '<tr><td class="empty-msg">No entries found for the selected filters.</td></tr>';
-                legendEl.innerHTML = "";
-                return;
+          allJgRows.forEach((row) => {
+            if (allCollapsed) {
+              row.classList.remove("collapsed");
+              const swimlaneLabel = row.querySelector(".swimlane-label");
+              if (swimlaneLabel) swimlaneLabel.classList.remove("collapsed");
+            } else {
+              row.classList.add("collapsed");
+              const swimlaneLabel = row.querySelector(".swimlane-label");
+              if (swimlaneLabel) swimlaneLabel.classList.add("collapsed");
             }
+          });
 
-            buildColorMap(roles);
-            renderLegend(roles);
+          jgHeader.classList.toggle("all-collapsed");
+        });
+        headerRow.appendChild(jgHeader);
 
-            // Header row with draggable columns
-            const thead = document.createElement("thead");
-            const headerRow = document.createElement("tr");
+        const counts = getTotalCountByRole();
 
-            const jgHeader = document.createElement("th");
-            jgHeader.className = "jg-header";
-            jgHeader.innerHTML = '<span class="toggle">▼</span>JG';
-            jgHeader.draggable = false;
-            jgHeader.addEventListener("click", () => {
-                // Toggle all JG rows
-                const allJgRows = document.querySelectorAll("tr[data-jg]");
-                const allCollapsed = jgHeader.classList.contains("all-collapsed");
+        for (const role of roles) {
+          const th = document.createElement("th");
+          th.style.background = roleColorMap[role];
+          const count = counts[role] || 0;
+          th.textContent = `${role} (${count})`;
+          th.draggable = true;
+          th.dataset.role = role;
 
-                allJgRows.forEach(row => {
-                    if (allCollapsed) {
-                        row.classList.remove("collapsed");
-                        const swimlaneLabel = row.querySelector(".swimlane-label");
-                        if (swimlaneLabel) swimlaneLabel.classList.remove("collapsed");
-                    } else {
-                        row.classList.add("collapsed");
-                        const swimlaneLabel = row.querySelector(".swimlane-label");
-                        if (swimlaneLabel) swimlaneLabel.classList.add("collapsed");
-                    }
-                });
+          th.addEventListener("dragstart", (e) => {
+            e.dataTransfer.setData("text/column", role);
+            th.classList.add("dragging");
+          });
+          th.addEventListener("dragend", () => {
+            th.classList.remove("dragging");
+          });
+          th.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            th.classList.add("drag-over");
+          });
+          th.addEventListener("dragleave", () => {
+            th.classList.remove("drag-over");
+          });
+          th.addEventListener("drop", (e) => {
+            e.preventDefault();
+            th.classList.remove("drag-over");
+            const draggedRole = e.dataTransfer.getData("text/column");
+            if (!draggedRole || draggedRole === role) return;
 
-                jgHeader.classList.toggle("all-collapsed");
+            // Reorder columns
+            const fromIdx = columnOrder.indexOf(draggedRole);
+            const toIdx = columnOrder.indexOf(role);
+            if (fromIdx !== -1 && toIdx !== -1) {
+              columnOrder.splice(fromIdx, 1);
+              columnOrder.splice(toIdx, 0, draggedRole);
+              renderBoard();
+            }
+          });
+
+          headerRow.appendChild(th);
+        }
+        thead.appendChild(headerRow);
+        boardEl.appendChild(thead);
+
+        // Swimlane rows
+        const tbody = document.createElement("tbody");
+        for (const jg of jgs) {
+          const tr = document.createElement("tr");
+          tr.dataset.jg = jg;
+
+          // JG label cell
+          const jgCell = document.createElement("td");
+          jgCell.className = "swimlane-label";
+          jgCell.innerHTML = `<span class="toggle">▼</span>${jg}`;
+          jgCell.addEventListener("click", () => {
+            tr.classList.toggle("collapsed");
+            jgCell.classList.toggle("collapsed");
+          });
+          tr.appendChild(jgCell);
+
+          // Role cells
+          for (const role of roles) {
+            const td = document.createElement("td");
+            td.className = "cell";
+            td.dataset.role = role;
+            td.dataset.jg = jg;
+
+            const people = swimlanes[String(jg)]?.[role] || [];
+
+            td.addEventListener("dragover", (e) => {
+              e.preventDefault();
+              td.classList.add("drag-over");
             });
-            headerRow.appendChild(jgHeader);
+            td.addEventListener("dragleave", () => {
+              td.classList.remove("drag-over");
+            });
+            td.addEventListener("drop", async (e) => {
+              e.preventDefault();
+              td.classList.remove("drag-over");
+              const name = e.dataTransfer.getData("text/plain");
+              const newRole = td.dataset.role;
+              const newJg = td.dataset.jg;
+              if (!name) return;
 
-            const counts = getTotalCountByRole();
+              const res = await fetch("/api/move", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  name,
+                  new_role: newRole,
+                  new_jg: newJg,
+                }),
+              });
+              if (res.ok) loadBoard();
+            });
 
-            for (const role of roles) {
-                const th = document.createElement("th");
-                th.style.background = roleColorMap[role];
-                const count = counts[role] || 0;
-                th.textContent = `${role} (${count})`;
-                th.draggable = true;
-                th.dataset.role = role;
-
-                th.addEventListener("dragstart", e => {
-                    e.dataTransfer.setData("text/column", role);
-                    th.classList.add("dragging");
-                });
-                th.addEventListener("dragend", () => {
-                    th.classList.remove("dragging");
-                });
-                th.addEventListener("dragover", e => {
-                    e.preventDefault();
-                    th.classList.add("drag-over");
-                });
-                th.addEventListener("dragleave", () => {
-                    th.classList.remove("drag-over");
-                });
-                th.addEventListener("drop", e => {
-                    e.preventDefault();
-                    th.classList.remove("drag-over");
-                    const draggedRole = e.dataTransfer.getData("text/column");
-                    if (!draggedRole || draggedRole === role) return;
-
-                    // Reorder columns
-                    const fromIdx = columnOrder.indexOf(draggedRole);
-                    const toIdx = columnOrder.indexOf(role);
-                    if (fromIdx !== -1 && toIdx !== -1) {
-                        columnOrder.splice(fromIdx, 1);
-                        columnOrder.splice(toIdx, 0, draggedRole);
-                        renderBoard();
-                    }
-                });
-
-                headerRow.appendChild(th);
-            }
-            thead.appendChild(headerRow);
-            boardEl.appendChild(thead);
-
-            // Swimlane rows
-            const tbody = document.createElement("tbody");
-            for (const jg of jgs) {
-                const tr = document.createElement("tr");
-                tr.dataset.jg = jg;
-
-                // JG label cell
-                const jgCell = document.createElement("td");
-                jgCell.className = "swimlane-label";
-                jgCell.innerHTML = `<span class="toggle">▼</span>${jg}`;
-                jgCell.addEventListener("click", () => {
-                    tr.classList.toggle("collapsed");
-                    jgCell.classList.toggle("collapsed");
-                });
-                tr.appendChild(jgCell);
-
-                // Role cells
-                for (const role of roles) {
-                    const td = document.createElement("td");
-                    td.className = "cell";
-                    td.dataset.role = role;
-                    td.dataset.jg = jg;
-
-                    const people = swimlanes[String(jg)]?.[role] || [];
-
-                    td.addEventListener("dragover", e => {
-                        e.preventDefault();
-                        td.classList.add("drag-over");
-                    });
-                    td.addEventListener("dragleave", () => {
-                        td.classList.remove("drag-over");
-                    });
-                    td.addEventListener("drop", async e => {
-                        e.preventDefault();
-                        td.classList.remove("drag-over");
-                        const name = e.dataTransfer.getData("text/plain");
-                        const newRole = td.dataset.role;
-                        const newJg = td.dataset.jg;
-                        if (!name) return;
-
-                        const res = await fetch("/api/move", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ name, new_role: newRole, new_jg: newJg })
-                        });
-                        if (res.ok) loadBoard();
-                    });
-
-                    if (people.length === 0) {
-                        td.innerHTML = '<div class="cell-empty">-</div>';
-                    } else {
-                        for (const p of people) {
-                            const card = document.createElement("div");
-                            card.className = "card";
-                            card.style.borderLeftColor = roleColorMap[role];
-                            card.draggable = true;
-                            card.innerHTML = `
+            if (people.length === 0) {
+              td.innerHTML = '<div class="cell-empty">-</div>';
+            } else {
+              for (const p of people) {
+                const card = document.createElement("div");
+                card.className = "card";
+                card.style.borderLeftColor = roleColorMap[role];
+                card.draggable = true;
+                card.innerHTML = `
                                 <div class="name">${p.name}</div>
                                 <div class="meta">Proposed: ${p.proposed_role}</div>
                                 ${p.comment ? `<div class="comment">${p.comment}</div>` : ""}
                             `;
-                            card.addEventListener("dragstart", e => {
-                                e.dataTransfer.setData("text/plain", p.name);
-                                card.classList.add("dragging");
-                            });
-                            card.addEventListener("dragend", () => {
-                                card.classList.remove("dragging");
-                            });
-                            card.addEventListener("dblclick", () => {
-                                showEditModal(p);
-                            });
-                            td.appendChild(card);
-                        }
-                    }
-
-                    tr.appendChild(td);
-                }
-
-                tbody.appendChild(tr);
-            }
-            boardEl.appendChild(tbody);
-        }
-
-        const fileInput = document.getElementById("file-input");
-        const loadBtn = document.getElementById("load-btn");
-        const currentFileEl = document.getElementById("current-file");
-
-        // Edit modal event listeners
-        editCancelBtn.addEventListener("click", closeEditModal);
-
-        editModal.addEventListener("click", (e) => {
-            if (e.target === editModal) closeEditModal();
-        });
-
-        document.addEventListener("keydown", (e) => {
-            if (e.key === "Escape" && editModal.classList.contains("active")) {
-                closeEditModal();
-            }
-        });
-
-        editForm.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            if (!currentEditingPerson) return;
-
-            const updatedData = {
-                name: currentEditingPerson.name,
-                proposed_role: editRoleInput.value,
-                comment: editCommentInput.value
-            };
-
-            try {
-                const res = await fetch("/api/edit", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(updatedData)
+                card.addEventListener("dragstart", (e) => {
+                  e.dataTransfer.setData("text/plain", p.name);
+                  card.classList.add("dragging");
                 });
-
-                if (res.ok) {
-                    closeEditModal();
-                    loadBoard();
-                } else {
-                    const err = await res.json();
-                    alert(err.error || "Failed to save changes");
-                }
-            } catch (error) {
-                alert("Error saving changes: " + error.message);
+                card.addEventListener("dragend", () => {
+                  card.classList.remove("dragging");
+                });
+                card.addEventListener("dblclick", () => {
+                  showEditModal(p);
+                });
+                td.appendChild(card);
+              }
             }
-        });
 
-        loadBtn.addEventListener("click", () => fileInput.click());
-        fileInput.addEventListener("change", async () => {
-            const file = fileInput.files[0];
-            if (!file) return;
-            const form = new FormData();
-            form.append("file", file);
-            const res = await fetch("/api/upload", { method: "POST", body: form });
-            if (res.ok) {
-                const data = await res.json();
-                currentFileEl.textContent = data.filename;
-                currentFileEl.title = data.filename;
-                window.location.reload();
-            } else {
-                const err = await res.json();
-                alert(err.error || "Upload failed");
-            }
-            fileInput.value = "";
-        });
+            tr.appendChild(td);
+          }
 
-        roleFilterEl.addEventListener("change", loadBoard);
-        jgFilterEl.addEventListener("change", loadBoard);
+          tbody.appendChild(tr);
+        }
+        boardEl.appendChild(tbody);
+      }
 
-        // Sort by count toggle
-        sortByCountToggle.addEventListener("change", () => {
-            sortByCellCount = sortByCountToggle.checked;
-            if (sortByCellCount) {
-                sortColumnsByCount();
-            } else {
-                // Restore original order
-                columnOrder = [...originalRoles];
-            }
-            renderBoard();
-        });
+      const fileInput = document.getElementById("file-input");
+      const loadBtn = document.getElementById("load-btn");
+      const currentFileEl = document.getElementById("current-file");
 
-        loadBoard();
+      // Edit modal event listeners
+      editCancelBtn.addEventListener("click", closeEditModal);
+
+      editModal.addEventListener("click", (e) => {
+        if (e.target === editModal) closeEditModal();
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && editModal.classList.contains("active")) {
+          closeEditModal();
+        }
+      });
+
+      editForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!currentEditingPerson) return;
+
+        const updatedData = {
+          name: currentEditingPerson.name,
+          proposed_role: editRoleInput.value,
+          comment: editCommentInput.value,
+        };
+
+        try {
+          const res = await fetch("/api/edit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updatedData),
+          });
+
+          if (res.ok) {
+            closeEditModal();
+            loadBoard();
+          } else {
+            const err = await res.json();
+            alert(err.error || "Failed to save changes");
+          }
+        } catch (error) {
+          alert("Error saving changes: " + error.message);
+        }
+      });
+
+      loadBtn.addEventListener("click", () => fileInput.click());
+      fileInput.addEventListener("change", async () => {
+        const file = fileInput.files[0];
+        if (!file) return;
+        const form = new FormData();
+        form.append("file", file);
+        const res = await fetch("/api/upload", { method: "POST", body: form });
+        if (res.ok) {
+          const data = await res.json();
+          currentFileEl.textContent = data.filename;
+          currentFileEl.title = data.filename;
+          window.location.reload();
+        } else {
+          const err = await res.json();
+          alert(err.error || "Upload failed");
+        }
+        fileInput.value = "";
+      });
+
+      roleFilterEl.addEventListener("change", loadBoard);
+      jgFilterEl.addEventListener("change", loadBoard);
+
+      // Sort by count toggle
+      sortByCountToggle.addEventListener("change", () => {
+        sortByCellCount = sortByCountToggle.checked;
+        if (sortByCellCount) {
+          sortColumnsByCount();
+        } else {
+          // Restore original order
+          columnOrder = [...originalRoles];
+        }
+        renderBoard();
+      });
+
+      loadBoard();
     </script>
-</body>
+  </body>
 </html>
