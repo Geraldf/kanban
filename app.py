@@ -237,10 +237,22 @@ def api_edit():
     if not mask.any():
         return jsonify({"error": f"Name '{name}' not found"}), 404
 
-    # Update all configured card fields
+    # Update all configured card fields, casting to match column dtype
     for field in card_fields:
-        if field in data:
-            df.loc[mask, field] = data[field]
+        if field in data and field in df.columns:
+            value = data[field]
+            col_dtype = df[field].dtype
+            if pd.api.types.is_integer_dtype(col_dtype):
+                try:
+                    value = int(value)
+                except (ValueError, TypeError):
+                    pass
+            elif pd.api.types.is_float_dtype(col_dtype):
+                try:
+                    value = float(value)
+                except (ValueError, TypeError):
+                    pass
+            df.loc[mask, field] = value
 
     df.to_excel(app.config["current_file"], index=False)
     return jsonify({"ok": True, "name": name})

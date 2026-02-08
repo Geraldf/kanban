@@ -494,6 +494,58 @@
         margin: 0;
         accent-color: #073f89;
       }
+
+      /* Rich text editor */
+      .richtext-wrapper {
+        border: 1px solid #c0c8d4;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .richtext-wrapper:focus-within {
+        border-color: #3a63b8;
+        box-shadow: 0 0 0 2px rgba(58, 99, 184, 0.15);
+      }
+
+      .richtext-toolbar {
+        display: flex;
+        gap: 2px;
+        padding: 4px 6px;
+        background: #f5f7fa;
+        border-bottom: 1px solid #c0c8d4;
+      }
+
+      .richtext-toolbar button {
+        background: none;
+        border: 1px solid transparent;
+        border-radius: 3px;
+        padding: 3px 8px;
+        font-size: 0.82rem;
+        font-family: inherit;
+        cursor: pointer;
+        color: #162D59;
+        line-height: 1.2;
+      }
+
+      .richtext-toolbar button:hover {
+        background: #e0e4ea;
+        border-color: #c0c8d4;
+      }
+
+      .richtext-editor {
+        min-height: 80px;
+        padding: 8px 10px;
+        font-size: 0.9rem;
+        font-family: inherit;
+        outline: none;
+        line-height: 1.5;
+        color: #1a1a1a;
+      }
+
+      .richtext-editor:empty:before {
+        content: attr(data-placeholder);
+        color: #a0aab8;
+      }
     </style>
   </head>
   <body>
@@ -728,13 +780,38 @@
             }
             group.appendChild(select);
           } else {
-            const input = document.createElement("input");
-            input.type = "text";
-            input.id = "edit-field-" + field;
-            input.dataset.field = field;
-            input.value = person[field] || "";
-            input.placeholder = field;
-            group.appendChild(input);
+            const wrapper = document.createElement("div");
+            wrapper.className = "richtext-wrapper";
+
+            const toolbar = document.createElement("div");
+            toolbar.className = "richtext-toolbar";
+            const buttons = [
+              { cmd: "bold", label: "<b>B</b>" },
+              { cmd: "italic", label: "<i>I</i>" },
+              { cmd: "underline", label: "<u>U</u>" },
+              { cmd: "insertUnorderedList", label: "List" },
+            ];
+            for (const btn of buttons) {
+              const b = document.createElement("button");
+              b.type = "button";
+              b.innerHTML = btn.label;
+              b.addEventListener("mousedown", (e) => {
+                e.preventDefault();
+                document.execCommand(btn.cmd, false, null);
+              });
+              toolbar.appendChild(b);
+            }
+            wrapper.appendChild(toolbar);
+
+            const editor = document.createElement("div");
+            editor.className = "richtext-editor";
+            editor.contentEditable = "true";
+            editor.dataset.field = field;
+            editor.innerHTML = person[field] || "";
+            editor.dataset.placeholder = field;
+            wrapper.appendChild(editor);
+
+            group.appendChild(wrapper);
           }
 
           editFieldsContainer.appendChild(group);
@@ -1015,7 +1092,7 @@
                 for (const field of (card_fields || [])) {
                   const val = p[field];
                   if (val) {
-                    html += `<div class="meta">${escapeHtml(field)}: ${escapeHtml(String(val))}</div>`;
+                    html += `<div class="meta"><strong>${escapeHtml(field)}:</strong> ${String(val)}</div>`;
                   }
                 }
                 card.innerHTML = html;
@@ -1065,9 +1142,13 @@
         if (!currentEditingPerson) return;
 
         const updatedData = { name: currentEditingPerson.name };
-        // Collect values from dynamic fields (inputs and selects)
+        // Collect values from dynamic fields (selects and rich text editors)
         editFieldsContainer.querySelectorAll("[data-field]").forEach((el) => {
-          updatedData[el.dataset.field] = el.value;
+          if (el.contentEditable === "true") {
+            updatedData[el.dataset.field] = el.innerHTML.trim();
+          } else {
+            updatedData[el.dataset.field] = el.value;
+          }
         });
 
         try {

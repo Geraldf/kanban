@@ -3,10 +3,12 @@
   "swimlane_column": "New JG",
   "card_header": "Name",
   "card_fields": [
+    "New JG",
     "Proposed new Role",
     "Comment"
   ],
   "dropdown_fields": [
+    "New JG",
     "Proposed new Role"
   ]
 }
