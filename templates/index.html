@@ -117,6 +117,12 @@
             min-width: 100%;
         }
 
+        .board-table thead {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
         .board-table th {
             background: #3498db;
             color: #fff;
@@ -150,7 +156,9 @@
             text-align: center;
             cursor: pointer;
             user-select: none;
-            position: relative;
+            position: sticky;
+            top: 0;
+            z-index: 101;
         }
 
         .board-table th.jg-header:hover {
