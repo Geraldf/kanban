@@ -1,262 +1,324 @@
-import json
 import os
-import tempfile
-import threading
-import time
+import logging
+from datetime import datetime
+from pathlib import Path
+import shutil
 
 from flask import Flask, render_template, request, jsonify
 import pandas as pd
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('kanban.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
 app = Flask(__name__)
 
-UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+# Configuration
+BASE_DIR = Path(__file__).parent.absolute()
+UPLOAD_DIR = BASE_DIR / "uploads"
+BACKUP_DIR = BASE_DIR / "backups"
+UPLOAD_DIR.mkdir(exist_ok=True)
+BACKUP_DIR.mkdir(exist_ok=True)
 
 app.config["current_file"] = None  # No file loaded initially
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB max file size
 
-TEMP_FILE = tempfile.NamedTemporaryFile(
-    suffix=".xlsx", delete=False, prefix="kanban_"
-).name
-
-LAST_FILE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "last_file.txt")
-COLUMN_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "column_config.json")
-
-DEFAULT_COLUMN_CONFIG = {
-    "board_column": "Role",
-    "swimlane_column": "New JG",
-    "card_header": "Name",
-    "card_fields": ["Proposed new Role for Manager Review", "Comment"],
-    "dropdown_fields": ["Proposed new Role for Manager Review"],
-}
+# Required Excel columns
+REQUIRED_COLUMNS = ["Name", "Role", "New JG", "Proposed new Role for Manager Review", "Comment"]
 
 
-def load_column_config():
-    """Load column mapping configuration from disk."""
-    if os.path.exists(COLUMN_CONFIG_PATH):
-        with open(COLUMN_CONFIG_PATH, "r") as f:
-            return json.load(f)
-    return dict(DEFAULT_COLUMN_CONFIG)
+def create_backup(file_path):
+    """Create a timestamped backup of the current file."""
+    try:
+        if not os.path.exists(file_path):
+            logger.warning(f"Cannot backup non-existent file: {file_path}")
+            return None
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_name = f"{Path(file_path).stem}_backup_{timestamp}.xlsx"
+        backup_path = BACKUP_DIR / backup_name
+        
+        shutil.copy2(file_path, backup_path)
+        logger.info(f"Backup created: {backup_path}")
+        
+        # Keep only last 10 backups per file
+        cleanup_old_backups(Path(file_path).stem)
+        
+        return str(backup_path)
+    except Exception as e:
+        logger.error(f"Backup creation failed: {e}")
+        return None
 
 
-def save_column_config(config):
-    """Save column mapping configuration to disk."""
-    with open(COLUMN_CONFIG_PATH, "w") as f:
-        json.dump(config, f, indent=2)
+def cleanup_old_backups(file_stem, keep_count=10):
+    """Keep only the most recent backups."""
+    try:
+        backups = sorted(
+            BACKUP_DIR.glob(f"{file_stem}_backup_*.xlsx"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True
+        )
+        
+        for old_backup in backups[keep_count:]:
+            old_backup.unlink()
+            logger.info(f"Deleted old backup: {old_backup}")
+    except Exception as e:
+        logger.error(f"Backup cleanup failed: {e}")
 
 
-app.config["column_config"] = load_column_config()
-
-
-def load_last_file():
-    """Load the last used file from disk if it exists."""
-    if os.path.exists(LAST_FILE_PATH):
-        with open(LAST_FILE_PATH, "r") as f:
-            file_path = f.read().strip()
-        if os.path.exists(file_path):
-            app.config["current_file"] = file_path
-            return True
-    return False
-
-
-# Load the last used file on startup
-load_last_file()
+def validate_excel_structure(df):
+    """Validate that the Excel file has required columns."""
+    missing_columns = [col for col in REQUIRED_COLUMNS if col not in df.columns]
+    if missing_columns:
+        raise ValueError(f"Missing required columns: {', '.join(missing_columns)}")
+    return True
 
 
 def load_data():
-    df = pd.read_excel(app.config["current_file"], sheet_name=0)
-    df = df.fillna("")
-    return df
-
-
-def get_config():
-    return app.config["column_config"]
+    """Load and validate Excel data with error handling."""
+    try:
+        if not app.config["current_file"]:
+            raise ValueError("No file currently loaded")
+        
+        if not os.path.exists(app.config["current_file"]):
+            raise FileNotFoundError(f"File not found: {app.config['current_file']}")
+        
+        df = pd.read_excel(app.config["current_file"], sheet_name=0)
+        validate_excel_structure(df)
+        df = df.fillna("")
+        
+        logger.info(f"Successfully loaded data from {app.config['current_file']}")
+        return df
+    except Exception as e:
+        logger.error(f"Error loading data: {e}")
+        raise
 
 
 @app.route("/")
 def index():
-    if not app.config["current_file"]:
-        return render_template("upload.html")
-    cfg = get_config()
-    df = load_data()
-    board_col = cfg["board_column"]
-    swim_col = cfg["swimlane_column"]
-    roles = sorted(df[board_col].unique())
-    jgs = sorted(df[swim_col].dropna().unique(), key=lambda v: (isinstance(v, str), v))
-    filename = app.config["current_file"]
-    return render_template("index.html", roles=roles, jgs=jgs, filename=filename,
-                           board_col_name=board_col, swim_col_name=swim_col)
+    """Main board view with error handling."""
+    try:
+        if not app.config["current_file"]:
+            return render_template("upload.html")
+        
+        df = load_data()
+        roles = sorted(df["Role"].unique())
+        jgs = sorted(int(v) for v in df["New JG"].dropna().unique() if v != "")
+        filename = os.path.basename(app.config["current_file"])
+        
+        logger.info(f"Board loaded: {filename}, {len(df)} entries")
+        return render_template("index.html", roles=roles, jgs=jgs, filename=filename)
+    except Exception as e:
+        logger.error(f"Error loading board: {e}")
+        return render_template("upload.html", error=f"Error loading file: {str(e)}")
 
 
 @app.route("/api/upload", methods=["POST"])
 def api_upload():
-    f = request.files.get("file")
-    if not f or not f.filename.endswith(".xlsx"):
-        return jsonify({"error": "Please select an .xlsx file"}), 400
-    dest = os.path.join(UPLOAD_DIR, f.filename)
-    f.save(dest)
-    app.config["current_file"] = dest
-    # Save the filename for next startup
-    with open(LAST_FILE_PATH, "w") as lf:
-        lf.write(dest)
-    return jsonify({"ok": True, "filename": f.filename})
-
-
-@app.route("/api/columns", methods=["GET"])
-def api_get_columns():
-    """Return available Excel columns and current mapping config."""
-    if not app.config["current_file"]:
-        return jsonify({"error": "No file loaded"}), 400
-    df = load_data()
-    columns = list(df.columns)
-    return jsonify({"columns": columns, "config": get_config()})
-
-
-@app.route("/api/columns", methods=["POST"])
-def api_save_columns():
-    """Save column mapping configuration."""
-    data = request.get_json()
-    cfg = get_config()
-    if "board_column" in data:
-        cfg["board_column"] = data["board_column"]
-    if "swimlane_column" in data:
-        cfg["swimlane_column"] = data["swimlane_column"]
-    if "card_header" in data:
-        cfg["card_header"] = data["card_header"]
-    if "card_fields" in data:
-        cfg["card_fields"] = data["card_fields"]
-    if "dropdown_fields" in data:
-        cfg["dropdown_fields"] = data["dropdown_fields"]
-    app.config["column_config"] = cfg
-    save_column_config(cfg)
-    return jsonify({"ok": True, "config": cfg})
+    """Upload and validate Excel file with comprehensive error handling."""
+    try:
+        if 'file' not in request.files:
+            return jsonify({"error": "No file part in request"}), 400
+        
+        f = request.files.get("file")
+        if not f or f.filename == '':
+            return jsonify({"error": "No file selected"}), 400
+        
+        if not f.filename.endswith(".xlsx"):
+            return jsonify({"error": "Only .xlsx files are supported"}), 400
+        
+        # Secure filename
+        filename = Path(f.filename).name
+        dest = UPLOAD_DIR / filename
+        
+        # Save file temporarily
+        f.save(dest)
+        logger.info(f"File uploaded: {filename}")
+        
+        # Validate structure before accepting
+        try:
+            df = pd.read_excel(dest, sheet_name=0)
+            validate_excel_structure(df)
+        except Exception as e:
+            os.remove(dest)
+            logger.error(f"Invalid file structure: {e}")
+            return jsonify({"error": f"Invalid file structure: {str(e)}"}), 400
+        
+        # If we had a previous file, create backup
+        if app.config["current_file"] and os.path.exists(app.config["current_file"]):
+            create_backup(app.config["current_file"])
+        
+        app.config["current_file"] = str(dest)
+        logger.info(f"File activated: {filename}, {len(df)} entries")
+        
+        return jsonify({
+            "ok": True, 
+            "filename": filename,
+            "entries": len(df),
+            "roles": len(df["Role"].unique()),
+            "jgs": len(df["New JG"].dropna().unique())
+        })
+    except Exception as e:
+        logger.error(f"Upload error: {e}")
+        return jsonify({"error": f"Upload failed: {str(e)}"}), 500
 
 
 @app.route("/api/board")
 def api_board():
-    cfg = get_config()
-    board_col = cfg["board_column"]
-    swim_col = cfg["swimlane_column"]
-    header_col = cfg["card_header"]
-    card_fields = cfg["card_fields"]
+    """Get board data with filtering and error handling."""
+    try:
+        df = load_data()
+        
+        # Apply filters
+        role_filter = request.args.get("role", "").strip()
+        if role_filter:
+            df = df[df["Role"] == role_filter]
+            logger.debug(f"Filtered by role: {role_filter}")
 
-    df = load_data()
+        jg_filter = request.args.get("jg", "").strip()
+        if jg_filter:
+            df = df[df["New JG"].astype(str) == jg_filter]
+            logger.debug(f"Filtered by JG: {jg_filter}")
 
-    col_filter = request.args.get("role", "")
-    if col_filter:
-        df = df[df[board_col] == col_filter]
+        all_roles = sorted(df["Role"].unique())
+        all_jgs = sorted(int(v) for v in df["New JG"].dropna().unique() if v != "")
 
-    swim_filter = request.args.get("jg", "")
-    if swim_filter:
-        df = df[df[swim_col].astype(str) == swim_filter]
+        # Build swimlanes
+        swimlanes = {}
+        for jg in all_jgs:
+            swimlanes[str(jg)] = {role: [] for role in all_roles}
 
-    all_roles = sorted(df[board_col].unique())
-    all_jgs = sorted(df[swim_col].dropna().unique(), key=lambda v: (isinstance(v, str), v))
+        for _, row in df.iterrows():
+            jg_val = row["New JG"]
+            if pd.notna(jg_val) and jg_val != "":
+                jg = str(int(jg_val))
+                role = row["Role"]
+                if jg and role:
+                    swimlanes[jg][role].append({
+                        "name": row["Name"],
+                        "proposed_role": row["Proposed new Role for Manager Review"],
+                        "comment": row["Comment"],
+                    })
 
-    swimlanes = {}
-    for jg in all_jgs:
-        swimlanes[str(jg)] = {role: [] for role in all_roles}
-
-    for _, row in df.iterrows():
-        jg_val = row[swim_col]
-        if jg_val == "":
-            continue
-        jg_key = str(int(jg_val)) if isinstance(jg_val, (int, float)) else str(jg_val)
-        col_val = row[board_col]
-        if not col_val:
-            continue
-
-        person = {"name": row[header_col]}
-        for field in card_fields:
-            if field in row.index:
-                person[field] = row[field]
-
-        if jg_key in swimlanes and col_val in swimlanes[jg_key]:
-            swimlanes[jg_key][col_val].append(person)
-
-    # Collect unique values only for fields configured as dropdowns
-    dropdown_fields = cfg.get("dropdown_fields", [])
-    full_df = load_data()
-    field_options = {}
-    for field in card_fields:
-        if field in dropdown_fields and field in full_df.columns:
-            vals = sorted(v for v in full_df[field].unique() if v != "")
-            field_options[field] = [str(v) for v in vals]
-
-    return jsonify({
-        "roles": all_roles,
-        "jgs": [str(int(j)) if isinstance(j, (int, float)) else str(j) for j in all_jgs],
-        "swimlanes": swimlanes,
-        "card_fields": card_fields,
-        "field_options": field_options,
-    })
+        return jsonify({
+            "roles": all_roles, 
+            "jgs": all_jgs, 
+            "swimlanes": swimlanes,
+            "total_entries": len(df)
+        })
+    except Exception as e:
+        logger.error(f"Error getting board data: {e}")
+        return jsonify({"error": f"Failed to load board: {str(e)}"}), 500
 
 
 @app.route("/api/move", methods=["POST"])
 def api_move():
-    cfg = get_config()
-    board_col = cfg["board_column"]
-    swim_col = cfg["swimlane_column"]
-    header_col = cfg["card_header"]
+    """Move entry with backup and comprehensive validation."""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No JSON data provided"}), 400
+        
+        name = data.get("name", "").strip()
+        new_role = data.get("new_role", "").strip()
+        new_jg = data.get("new_jg", "").strip()
+        
+        if not name:
+            return jsonify({"error": "Name is required"}), 400
+        
+        if not new_role and not new_jg:
+            return jsonify({"error": "Either new_role or new_jg must be provided"}), 400
 
-    data = request.get_json()
-    name = data.get("name", "")
-    new_role = data.get("new_role", "")
-    new_jg = data.get("new_jg", "")
-    if not name:
-        return jsonify({"error": "name required"}), 400
+        # Create backup before modification
+        backup_path = create_backup(app.config["current_file"])
+        if not backup_path:
+            logger.warning("Proceeding without backup")
 
-    df = pd.read_excel(app.config["current_file"], sheet_name=0)
-    mask = df[header_col] == name
-    if not mask.any():
-        return jsonify({"error": f"Name '{name}' not found"}), 404
+        # Load and modify data
+        df = pd.read_excel(app.config["current_file"], sheet_name=0)
+        mask = df["Name"] == name
+        
+        if not mask.any():
+            return jsonify({"error": f"Name '{name}' not found"}), 404
 
-    if new_role:
-        df.loc[mask, board_col] = new_role
-    if new_jg:
-        try:
-            df.loc[mask, swim_col] = int(new_jg)
-        except ValueError:
-            df.loc[mask, swim_col] = new_jg
-    df.to_excel(app.config["current_file"], index=False)
-    return jsonify({"ok": True, "name": name, "new_role": new_role, "new_jg": new_jg})
+        # Track changes for logging
+        changes = {}
+        if new_role:
+            old_role = df.loc[mask, "Role"].iloc[0]
+            df.loc[mask, "Role"] = new_role
+            changes["role"] = {"old": old_role, "new": new_role}
+            
+        if new_jg:
+            old_jg = df.loc[mask, "New JG"].iloc[0]
+            df.loc[mask, "New JG"] = int(new_jg)
+            changes["jg"] = {"old": str(old_jg), "new": new_jg}
+
+        # Save changes
+        df.to_excel(app.config["current_file"], index=False)
+        
+        logger.info(f"Entry moved: {name} - {changes}")
+        
+        return jsonify({
+            "ok": True, 
+            "name": name, 
+            "new_role": new_role, 
+            "new_jg": new_jg,
+            "backup": os.path.basename(backup_path) if backup_path else None,
+            "changes": changes
+        })
+    except Exception as e:
+        logger.error(f"Move error: {e}")
+        return jsonify({"error": f"Move failed: {str(e)}"}), 500
 
 
-@app.route("/api/edit", methods=["POST"])
-def api_edit():
-    cfg = get_config()
-    header_col = cfg["card_header"]
-    card_fields = cfg["card_fields"]
+@app.route("/api/backups")
+def api_backups():
+    """List available backups."""
+    try:
+        backups = []
+        for backup_file in sorted(BACKUP_DIR.glob("*.xlsx"), key=lambda p: p.stat().st_mtime, reverse=True):
+            backups.append({
+                "filename": backup_file.name,
+                "size": backup_file.stat().st_size,
+                "created": datetime.fromtimestamp(backup_file.stat().st_mtime).isoformat()
+            })
+        return jsonify({"backups": backups, "count": len(backups)})
+    except Exception as e:
+        logger.error(f"Error listing backups: {e}")
+        return jsonify({"error": str(e)}), 500
 
-    data = request.get_json()
-    name = data.get("name", "")
-    if not name:
-        return jsonify({"error": "name required"}), 400
 
-    df = pd.read_excel(app.config["current_file"], sheet_name=0)
-    mask = df[header_col] == name
-    if not mask.any():
-        return jsonify({"error": f"Name '{name}' not found"}), 404
-
-    # Update all configured card fields, casting to match column dtype
-    for field in card_fields:
-        if field in data and field in df.columns:
-            value = data[field]
-            col_dtype = df[field].dtype
-            if pd.api.types.is_integer_dtype(col_dtype):
-                try:
-                    value = int(value)
-                except (ValueError, TypeError):
-                    pass
-            elif pd.api.types.is_float_dtype(col_dtype):
-                try:
-                    value = float(value)
-                except (ValueError, TypeError):
-                    pass
-            df.loc[mask, field] = value
-
-    df.to_excel(app.config["current_file"], index=False)
-    return jsonify({"ok": True, "name": name})
+@app.route("/api/restore/<backup_name>", methods=["POST"])
+def api_restore(backup_name):
+    """Restore from a backup."""
+    try:
+        backup_path = BACKUP_DIR / backup_name
+        if not backup_path.exists():
+            return jsonify({"error": "Backup not found"}), 404
+        
+        # Create backup of current state before restoring
+        if app.config["current_file"]:
+            create_backup(app.config["current_file"])
+        
+        # Restore
+        dest = UPLOAD_DIR / f"restored_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        shutil.copy2(backup_path, dest)
+        app.config["current_file"] = str(dest)
+        
+        logger.info(f"Restored from backup: {backup_name}")
+        return jsonify({"ok": True, "filename": dest.name})
+    except Exception as e:
+        logger.error(f"Restore error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":
+    logger.info("Starting Kanban Board application")
     app.run(debug=True)
