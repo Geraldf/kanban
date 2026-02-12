@@ -1,0 +1,85 @@
+2026-02-12 19:54:14,969 - __main__ - INFO - Starting Kanban Board application
+2026-02-12 19:54:15,077 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2026-02-12 19:54:15,077 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-02-12 19:54:15,083 - werkzeug - INFO -  * Restarting with stat
+2026-02-12 19:54:15,721 - __main__ - INFO - Starting Kanban Board application
+2026-02-12 19:54:15,754 - werkzeug - WARNING -  * Debugger is active!
+2026-02-12 19:54:15,797 - werkzeug - INFO -  * Debugger PIN: 102-148-141
+2026-02-12 19:54:22,861 - werkzeug - INFO - 127.0.0.1 - - [12/Feb/2026 19:54:22] "GET / HTTP/1.1" 200 -
+2026-02-12 19:54:23,386 - werkzeug - INFO - 127.0.0.1 - - [12/Feb/2026 19:54:23] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-02-12 19:54:28,580 - __main__ - INFO - File uploaded: CaliPrep (1).xlsx
+2026-02-12 19:54:29,213 - __main__ - ERROR - Invalid file structure: Missing required columns: Proposed new Role for Manager Review
+2026-02-12 19:54:29,214 - werkzeug - INFO - 127.0.0.1 - - [12/Feb/2026 19:54:29] "[31m[1mPOST /api/upload HTTP/1.1[0m" 400 -
+2026-02-12 19:55:49,643 - __main__ - INFO - File uploaded: CaliPrep (1).xlsx
+2026-02-12 19:55:49,675 - __main__ - INFO - File activated: CaliPrep (1).xlsx, 130 entries
+2026-02-12 19:55:49,679 - werkzeug - INFO - 127.0.0.1 - - [12/Feb/2026 19:55:49] "POST /api/upload HTTP/1.1" 200 -
+2026-02-12 19:55:49,707 - __main__ - INFO - Successfully loaded data from /Users/geraldfuchs/dev/python/kanban/uploads/CaliPrep (1).xlsx
+2026-02-12 19:55:49,708 - __main__ - INFO - Board loaded: CaliPrep (1).xlsx, 130 entries
+2026-02-12 19:55:49,715 - werkzeug - INFO - 127.0.0.1 - - [12/Feb/2026 19:55:49] "GET / HTTP/1.1" 200 -
+2026-02-12 19:55:49,797 - __main__ - INFO - Successfully loaded data from /Users/geraldfuchs/dev/python/kanban/uploads/CaliPrep (1).xlsx
+2026-02-12 19:55:49,803 - werkzeug - INFO - 127.0.0.1 - - [12/Feb/2026 19:55:49] "GET /api/board HTTP/1.1" 200 -
+2026-02-12 19:55:56,966 - werkzeug - INFO - 127.0.0.1 - - [12/Feb/2026 19:55:56] "[33mGET /api/columns HTTP/1.1[0m" 404 -
+2026-02-12 19:55:59,957 - werkzeug - INFO - 127.0.0.1 - - [12/Feb/2026 19:55:59] "[33mGET /api/columns HTTP/1.1[0m" 404 -
+2026-02-12 19:56:03,337 - werkzeug - INFO - 127.0.0.1 - - [12/Feb/2026 19:56:03] "[33mGET /api/columns HTTP/1.1[0m" 404 -
+2026-02-12 19:56:12,068 - __main__ - INFO - File uploaded: CaliPrep (1).xlsx
+2026-02-12 19:56:12,105 - __main__ - ERROR - Invalid file structure: Missing required columns: Proposed new Role for Manager Review
+2026-02-12 19:56:12,105 - werkzeug - INFO - 127.0.0.1 - - [12/Feb/2026 19:56:12] "[31m[1mPOST /api/upload HTTP/1.1[0m" 400 -
+2026-02-12 19:56:24,577 - werkzeug - INFO - 127.0.0.1 - - [12/Feb/2026 19:56:24] "[33mGET /api/columns HTTP/1.1[0m" 404 -
+2026-02-12 19:56:25,292 - werkzeug - INFO - 127.0.0.1 - - [12/Feb/2026 19:56:25] "[33mGET /api/columns HTTP/1.1[0m" 404 -
+2026-02-12 19:56:25,516 - werkzeug - INFO - 127.0.0.1 - - [12/Feb/2026 19:56:25] "[33mGET /api/columns HTTP/1.1[0m" 404 -
+2026-02-12 19:56:27,718 - werkzeug - INFO - 127.0.0.1 - - [12/Feb/2026 19:56:27] "[33mGET /api/columns HTTP/1.1[0m" 404 -
+2026-02-12 19:56:27,927 - werkzeug - INFO - 127.0.0.1 - - [12/Feb/2026 19:56:27] "[33mGET /api/columns HTTP/1.1[0m" 404 -
+2026-02-12 19:56:31,800 - werkzeug - INFO - 127.0.0.1 - - [12/Feb/2026 19:56:31] "[33mGET /api/columns HTTP/1.1[0m" 404 -
+2026-02-12 19:58:49,746 - werkzeug - INFO -  * Detected change in '/Users/geraldfuchs/dev/python/kanban/app.py', reloading
+2026-02-12 19:58:49,894 - werkzeug - INFO -  * Restarting with stat
+2026-02-12 19:58:50,624 - __main__ - INFO - Starting Kanban Board application
+2026-02-12 19:58:50,652 - werkzeug - WARNING -  * Debugger is active!
+2026-02-12 19:58:50,670 - werkzeug - INFO -  * Debugger PIN: 102-148-141
+2026-02-12 19:59:23,265 - werkzeug - INFO -  * Detected change in '/Users/geraldfuchs/dev/python/kanban/app.py', reloading
+2026-02-12 19:59:23,356 - werkzeug - INFO -  * Restarting with stat
+2026-02-12 19:59:24,021 - __main__ - INFO - Starting Kanban Board application
+2026-02-12 19:59:24,051 - werkzeug - WARNING -  * Debugger is active!
+2026-02-12 19:59:24,069 - werkzeug - INFO -  * Debugger PIN: 102-148-141
+2026-02-12 19:59:56,645 - werkzeug - INFO -  * Detected change in '/Users/geraldfuchs/dev/python/kanban/app.py', reloading
+2026-02-12 19:59:56,737 - werkzeug - INFO -  * Restarting with stat
+2026-02-12 19:59:57,389 - __main__ - INFO - Starting Kanban Board application
+2026-02-12 19:59:57,420 - werkzeug - WARNING -  * Debugger is active!
+2026-02-12 19:59:57,438 - werkzeug - INFO -  * Debugger PIN: 102-148-141
+2026-02-12 20:00:05,893 - werkzeug - INFO -  * Detected change in '/Users/geraldfuchs/dev/python/kanban/app.py', reloading
+2026-02-12 20:00:05,978 - werkzeug - INFO -  * Restarting with stat
+2026-02-12 20:00:06,631 - __main__ - INFO - Starting Kanban Board application
+2026-02-12 20:00:06,660 - werkzeug - WARNING -  * Debugger is active!
+2026-02-12 20:00:06,679 - werkzeug - INFO -  * Debugger PIN: 102-148-141
+2026-02-12 20:00:18,265 - werkzeug - INFO -  * Detected change in '/Users/geraldfuchs/dev/python/kanban/app.py', reloading
+2026-02-12 20:00:18,354 - werkzeug - INFO -  * Restarting with stat
+2026-02-12 20:00:19,011 - __main__ - INFO - Starting Kanban Board application
+2026-02-12 20:00:19,048 - werkzeug - WARNING -  * Debugger is active!
+2026-02-12 20:00:19,073 - werkzeug - INFO -  * Debugger PIN: 102-148-141
+2026-02-12 20:00:24,385 - werkzeug - INFO -  * Detected change in '/Users/geraldfuchs/dev/python/kanban/app.py', reloading
+2026-02-12 20:00:24,483 - werkzeug - INFO -  * Restarting with stat
+2026-02-12 20:00:25,080 - __main__ - INFO - Starting Kanban Board application
+2026-02-12 20:00:25,109 - werkzeug - WARNING -  * Debugger is active!
+2026-02-12 20:00:25,124 - werkzeug - INFO -  * Debugger PIN: 102-148-141
+2026-02-12 20:00:43,042 - werkzeug - INFO -  * Detected change in '/Users/geraldfuchs/dev/python/kanban/app.py', reloading
+2026-02-12 20:00:43,134 - werkzeug - INFO -  * Restarting with stat
+2026-02-12 20:00:43,691 - __main__ - INFO - Starting Kanban Board application
+2026-02-12 20:00:43,719 - werkzeug - WARNING -  * Debugger is active!
+2026-02-12 20:00:43,736 - werkzeug - INFO -  * Debugger PIN: 102-148-141
+2026-02-12 20:01:00,603 - werkzeug - INFO -  * Detected change in '/Users/geraldfuchs/dev/python/kanban/app.py', reloading
+2026-02-12 20:01:00,716 - werkzeug - INFO -  * Restarting with stat
+2026-02-12 20:01:01,275 - __main__ - INFO - Starting Kanban Board application
+2026-02-12 20:01:01,301 - werkzeug - WARNING -  * Debugger is active!
+2026-02-12 20:01:01,317 - werkzeug - INFO -  * Debugger PIN: 102-148-141
+2026-02-12 20:01:13,940 - werkzeug - INFO -  * Detected change in '/Users/geraldfuchs/dev/python/kanban/app.py', reloading
+2026-02-12 20:01:14,034 - werkzeug - INFO -  * Restarting with stat
+2026-02-12 20:01:14,607 - __main__ - INFO - Starting Kanban Board application
+2026-02-12 20:01:14,638 - werkzeug - WARNING -  * Debugger is active!
+2026-02-12 20:01:14,656 - werkzeug - INFO -  * Debugger PIN: 102-148-141
+2026-02-12 20:01:43,248 - werkzeug - INFO - 127.0.0.1 - - [12/Feb/2026 20:01:43] "GET / HTTP/1.1" 200 -
+2026-02-12 20:01:49,559 - __main__ - INFO - File uploaded: CaliPrep (1).xlsx
+2026-02-12 20:01:49,756 - __main__ - INFO - File activated: CaliPrep (1).xlsx, 130 entries
+2026-02-12 20:01:49,757 - werkzeug - INFO - 127.0.0.1 - - [12/Feb/2026 20:01:49] "POST /api/upload HTTP/1.1" 200 -
+2026-02-12 20:01:49,795 - werkzeug - INFO - 127.0.0.1 - - [12/Feb/2026 20:01:49] "GET / HTTP/1.1" 200 -
+2026-02-12 20:01:49,875 - werkzeug - INFO - 127.0.0.1 - - [12/Feb/2026 20:01:49] "GET /api/board HTTP/1.1" 200 -
+2026-02-12 20:01:55,591 - werkzeug - INFO - 127.0.0.1 - - [12/Feb/2026 20:01:55] "GET /api/columns HTTP/1.1" 200 -
